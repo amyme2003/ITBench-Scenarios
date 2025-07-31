@@ -2,6 +2,9 @@
 - name: Manage SRE and FinOps Incident Environment Tool Stack
   hosts:
     - environment
+  vars:
+    cluster:
+      kubeconfig: "~/.kube/config"
   pre_tasks:
     - name: Ensure incident file is defined
       ansible.builtin.assert:
