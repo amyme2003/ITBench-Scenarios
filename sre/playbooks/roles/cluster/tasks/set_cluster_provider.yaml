@@ -10,4 +10,4 @@
 
 - name: Set cluster provider variable as control node(s) provider id information
   ansible.builtin.set_fact:
-    cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first }}"
+    cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first if cluster_control_nodes_info.resources | length > 0 else 'unknown' }}"
