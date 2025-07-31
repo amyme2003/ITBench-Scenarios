@@ -2,15 +2,20 @@
 - name: Manage SRE and FinOps Incident Environment Tool Stack
   hosts:
     - environment
-  vars:
-    cluster:
-      kubeconfig: "~/.kube/config"
   pre_tasks:
     - name: Ensure incident file is defined
       ansible.builtin.assert:
         that: incident_id is defined
         fail_msg: incident_id is not defined. Please run playbook with variable defined via CLI arguments.
         success_msg: incident_id is defined.
+      tags:
+        - always
+        
+    - name: Set default cluster variable if not defined
+      ansible.builtin.set_fact:
+        cluster:
+          kubeconfig: "~/.kube/config"
+      when: cluster is not defined
       tags:
         - always
 
