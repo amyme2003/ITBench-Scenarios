@@ -1,3 +1,5 @@
 ---
 cluster:
   kubeconfig: ~/.kube/config
+cluster_provider: aws
+cluster_platform: eks
