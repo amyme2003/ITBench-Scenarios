@@ -1,0 +1,12 @@
+version: 1
+build_arg_defaults:
+  EE_BASE_IMAGE: delivery.instana.io/dev-sandbox-docker-all/amy/my-ee-python312:latest
+  EE_BUILDER_IMAGE: quay.io/ansible/ansible-builder:latest
+dependencies:
+  galaxy: requirements.yml
+  python: requirements.txt
+
+# This execution environment uses Python 3.12 to satisfy the requirement:
+# Python version for system /usr/bin/python3 must be 3.12 or later. Got 3.9.21
+
+# Made with Bob
