@@ -29,7 +29,7 @@ RUN python --version && \
 
 # Install Ansible and other Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir ansible kubernetes openshift PyYAML jmespath netaddr boto3 botocore requests cryptography
+    pip install --no-cache-dir ansible ansible-runner kubernetes openshift PyYAML jmespath netaddr boto3 botocore requests cryptography
 
 # Install AWS CLI v2
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
@@ -55,4 +55,4 @@ RUN mkdir -p /ansible/playbooks /ansible/collections
 WORKDIR /ansible
 
 # Set default command
-CMD ["ansible-playbook", "--version"]
+CMD ["ansible-runner", "--version"]
