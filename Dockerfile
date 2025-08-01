@@ -2,7 +2,6 @@ FROM python:3.12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV ANSIBLE_PYTHON_INTERPRETER=/usr/local/bin/python
 
 # Install system dependencies
 RUN apt-get update && \
@@ -19,17 +18,25 @@ RUN apt-get update && \
         sshpass \
         unzip \
         wget \
-        gnupg && \
+        gnupg \
+        python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Verify Python version meets the requirement (3.12 or later)
-RUN python --version && \
-    python -c "import sys; assert sys.version_info >= (3, 12), 'Python version must be 3.12 or later'"
-
-# Install Ansible and other Python dependencies
+# Install Python packages
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir ansible ansible-runner kubernetes openshift PyYAML jmespath netaddr boto3 botocore requests cryptography
+    pip install --no-cache-dir \
+        ansible \
+        ansible-runner \
+        kubernetes \
+        openshift \
+        PyYAML \
+        jmespath \
+        netaddr \
+        boto3 \
+        botocore \
+        requests \
+        cryptography
 
 # Install AWS CLI v2
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
@@ -49,10 +56,9 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
 RUN curl -Lo /usr/local/bin/kops https://github.com/kubernetes/kops/releases/latest/download/kops-linux-amd64 && \
     chmod +x /usr/local/bin/kops
 
-# Create directories for Ansible
+# Create Ansible working directory
 RUN mkdir -p /ansible/playbooks /ansible/collections
 
 WORKDIR /ansible
 
-# Set default command
-CMD ["ansible-runner", "--version"]
+# Don't add CMD; AWX handles execution
