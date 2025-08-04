@@ -1,7 +1,7 @@
 ---
 - name: Check for Helm CLI
   ansible.builtin.command:
-    cmd: which helm
+    cmd: command -v helm
   register: system_helm_path
   changed_when: false
   failed_when: false
