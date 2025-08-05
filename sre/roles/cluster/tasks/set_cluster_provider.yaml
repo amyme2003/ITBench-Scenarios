@@ -1,13 +1,28 @@
 ---
+- name: Check if kubeconfig file exists
+  ansible.builtin.stat:
+    path: "{{ cluster.kubeconfig | ansible.builtin.expanduser }}"
+  register: kubeconfig_stat
+
 - name: Retrieve all control nodes
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Node
-    kubeconfig: "{{ cluster.kubeconfig }}"
+    kubeconfig: "{{ cluster.kubeconfig | ansible.builtin.expanduser }}"
     label_selectors:
       - node-role.kubernetes.io/control-plane =
   register: cluster_control_nodes_info
+  when: kubeconfig_stat.stat.exists | bool
+
+- name: Set default cluster provider if kubeconfig doesn't exist
+  ansible.builtin.set_fact:
+    cluster_provider: "unknown"
+  when: not (kubeconfig_stat.stat.exists | bool)
 
 - name: Set cluster provider variable as control node(s) provider id information
   ansible.builtin.set_fact:
     cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first }}"
+  when:
+    - kubeconfig_stat.stat.exists | bool
+    - cluster_control_nodes_info.resources is defined
+    - cluster_control_nodes_info.resources | length > 0
