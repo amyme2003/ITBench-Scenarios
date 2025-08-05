@@ -1,28 +1,13 @@
-- name: Check if kubernetes.core collection is available
-  ansible.builtin.shell: ansible-galaxy collection list | grep kubernetes.core
-  register: k8s_collection_check
-  ignore_errors: true
-  delegate_to: localhost
+---
+- name: Retrieve all control nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    kubeconfig: "{{ cluster_files.kubeconfig }}"
+    label_selectors:
+      - node-role.kubernetes.io/control-plane =
+  register: cluster_control_nodes_info
 
-- name: Set cluster provider using kubernetes collection when available
-  block:
-    - name: Retrieve all control nodes
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Node
-        host: "{{ lookup('env', 'K8S_AUTH_HOST') }}"
-        api_key: "{{ lookup('env', 'K8S_AUTH_API_KEY') }}"
-        verify_ssl: "{{ lookup('env', 'K8S_AUTH_VERIFY_SSL') | default(true) }}"
-        label_selectors:
-          - node-role.kubernetes.io/control-plane =
-      register: cluster_control_nodes_info
-
-    - name: Set cluster provider variable as control node(s) provider id information
-      ansible.builtin.set_fact:
-        cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first if cluster_control_nodes_info.resources | length > 0 and cluster_control_nodes_info.resources[0].spec.providerID is defined else 'eks' }}"
-  when: k8s_collection_check.rc == 0
-
-- name: Set default cluster provider when kubernetes collection is not available
+- name: Set cluster provider variable as control node(s) provider id information
   ansible.builtin.set_fact:
-    cluster_provider: "eks"
-  when: k8s_collection_check.rc != 0
+    cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first }}"
