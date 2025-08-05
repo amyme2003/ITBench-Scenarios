@@ -3,7 +3,7 @@
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Node
-    kubeconfig: "{{ cluster_files.kubeconfig }}"
+    kubeconfig: "{{ lookup('env', 'K8S_AUTH_KUBECONFIG') }}"
     label_selectors:
       - node-role.kubernetes.io/control-plane =
   register: cluster_control_nodes_info
