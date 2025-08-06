@@ -31,6 +31,16 @@
     that: "'1.33' is version_compare(system_kubectl_client_version, '<=')"
     fail_msg: kubectl client for system {{ system_kubectl_path }} must be 1.33 or later. Got {{ system_kubectl_client_version }}
     success_msg: kubectl client version {{ system_kubectl_client_version }} (>= 1.33) is OK.
+- name: Get kubectl server version
+  ansible.builtin.command:
+    cmd: "{{ system_kubectl_path.stdout }} version -o json"
+  register: system_raw_kubectl_full_version
+  changed_when: false
+
+- name: Extract kubectl server version
+  ansible.builtin.set_fact:
+    system_kubectl_server_version: "{{ (system_raw_kubectl_full_version.stdout | from_json).serverVersion.gitVersion | split('v') | last }}"
+
 - name: Validate kubectl server version
   ansible.builtin.assert:
     that: "'1.32' is version_compare(system_kubectl_server_version, '<=')"
