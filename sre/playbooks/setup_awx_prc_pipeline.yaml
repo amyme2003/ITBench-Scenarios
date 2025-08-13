@@ -1,0 +1,297 @@
+---
+- name: Setup AWX Pipeline for PRC Enrichment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars:
+    # Use simple string values instead of recursive templating
+    awx_host_default: "http://localhost:8052"
+    awx_username_default: "admin"
+    awx_password_default: "password"
+    awx_project_name_default: "SRE Project"
+    awx_inventory_name_default: "Default Inventory"
+    awx_credential_name_default: "Default Credential"
+    awx_organization_name_default: "Default"
+  
+  tasks:
+    - name: Get AWX auth token
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/tokens/"
+        method: POST
+        user: "{{ awx_username | default(awx_username_default) }}"
+        password: "{{ awx_password | default(awx_password_default) }}"
+        force_basic_auth: yes
+        status_code: 201
+        body_format: json
+        body:
+          description: "API Token for PRC Enrichment Pipeline"
+          scope: "write"
+      register: auth_token_response
+      no_log: true
+    
+    - name: Set auth token fact
+      set_fact:
+        awx_auth_token: "{{ auth_token_response.json.token }}"
+      no_log: true
+    
+    # Get organization ID first as it's needed for other resources
+    - name: Get organization ID
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/organizations/?name={{ awx_organization_name | default(awx_organization_name_default) | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: 200
+        body_format: json
+      register: organization_response
+    
+    - name: Set organization ID fact
+      set_fact:
+        awx_organization_id: "{{ organization_response.json.results[0].id }}"
+      when: organization_response.json.results | length > 0
+    
+    - name: Display organization info
+      debug:
+        msg: "Found organization: {{ awx_organization_name | default(awx_organization_name_default) }} with ID: {{ awx_organization_id | default('Not found') }}"
+    
+    # Get or create inventory
+    - name: Get inventory ID
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/inventories/?name={{ awx_inventory_name | default(awx_inventory_name_default) | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: 200
+        body_format: json
+      register: inventory_response
+    
+    - name: Set inventory ID fact
+      set_fact:
+        awx_inventory_id: "{{ inventory_response.json.results[0].id }}"
+      when: inventory_response.json.results | length > 0
+    
+    - name: Check if we need to create an inventory
+      set_fact:
+        need_inventory: "{{ inventory_response.json.results | length == 0 }}"
+    
+    - name: Create default inventory
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/inventories/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: [201, 400]
+        body_format: json
+        body:
+          name: "{{ awx_inventory_name | default(awx_inventory_name_default) }}"
+          description: "Default inventory for PRC Enrichment"
+          organization: "{{ awx_organization_id }}"
+      register: new_inventory_response
+      when: 
+        - need_inventory | default(false)
+        - awx_organization_id is defined
+    
+    - name: Set inventory ID from newly created inventory
+      set_fact:
+        awx_inventory_id: "{{ new_inventory_response.json.id }}"
+      when: 
+        - need_inventory | default(false)
+        - new_inventory_response is defined
+        - new_inventory_response.status == 201
+    
+    - name: Display inventory info
+      debug:
+        msg: "Using inventory: {{ awx_inventory_name | default(awx_inventory_name_default) }} with ID: {{ awx_inventory_id | default('Not found') }}"
+    
+    # Create a host in the inventory
+    - name: Create localhost host in inventory
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/inventories/{{ awx_inventory_id }}/hosts/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: [201, 400]
+        body_format: json
+        body:
+          name: "localhost"
+          description: "Local execution host"
+          variables: '{"ansible_connection": "local"}'
+      register: host_response
+      when: awx_inventory_id is defined
+    
+    # Get or check credential
+    - name: Get credential ID
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/credentials/?name={{ awx_credential_name | default(awx_credential_name_default) | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: 200
+        body_format: json
+      register: credential_response
+    
+    - name: Set credential ID fact
+      set_fact:
+        awx_credential_id: "{{ credential_response.json.results[0].id }}"
+      when: credential_response.json.results | length > 0
+    
+    - name: Display credential info
+      debug:
+        msg: "Using credential: {{ awx_credential_name | default(awx_credential_name_default) }} with ID: {{ awx_credential_id | default('Not found') }}"
+    
+    # Get existing projects
+    - name: Get existing projects
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/projects/?name=PRC%20Enrichment%20Project"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: 200
+        body_format: json
+      register: existing_projects_response
+    
+    - name: Set project ID from existing project
+      set_fact:
+        awx_project_id: "{{ existing_projects_response.json.results[0].id }}"
+      when: 
+        - existing_projects_response is defined
+        - existing_projects_response.json.results | length > 0
+    
+    # Create a project if it doesn't exist
+    - name: Create project
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/projects/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: [201, 400]
+        body_format: json
+        body:
+          name: "PRC Enrichment Project"
+          description: "Project for PRC Enrichment"
+          organization: "{{ awx_organization_id }}"
+          scm_type: "git"
+          scm_url: "https://github.com/ansible/ansible-tower-samples.git"  # Using a sample repo that exists
+          scm_branch: "master"
+          scm_clean: true
+          scm_update_on_launch: true
+      register: project_response
+      when: 
+        - awx_organization_id is defined
+        - awx_project_id is not defined
+    
+    - name: Set project ID from newly created project
+      set_fact:
+        awx_project_id: "{{ project_response.json.id }}"
+      when: 
+        - project_response is defined
+        - project_response.status == 201
+    
+    - name: Display project info
+      debug:
+        msg: "Using project with ID: {{ awx_project_id | default('Not found') }}"
+    
+    # Update project to sync it
+    - name: Update project
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/projects/{{ awx_project_id }}/update/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: [202, 400]
+        body_format: json
+        body: {}
+      register: project_update_response
+      when: awx_project_id is defined
+    
+    - name: Display project update response
+      debug:
+        var: project_update_response
+      when: project_update_response is defined
+    
+    # Wait for project update to complete
+    - name: Wait for 10 seconds for project to update
+      pause:
+        seconds: 10
+      when: project_update_response is defined
+    
+    # Create a job template with what we have
+    - name: Create PRC Enrichment Job Template
+      uri:
+        url: "{{ awx_host | default(awx_host_default) }}/api/v2/job_templates/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_auth_token }}"
+        status_code: [201, 400]
+        body_format: json
+        body:
+          name: "PRC Enrichment Pipeline"
+          description: "Pipeline to fetch and enrich incidents with probable root causes"
+          job_type: "run"
+          inventory: "{{ awx_inventory_id }}"
+          project: "{{ awx_project_id }}"
+          playbook: "hello_world.yml"  # Using a playbook that exists in the sample repo
+          verbosity: 1
+          extra_vars: |
+            {
+              "instana_api_endpoint": "https://release-instana.instana.rocks",
+              "instana_api_token": "",
+              "output_dir": "/tmp/prc_enrichment_results",
+              "output_filename": "prc_label.json"
+            }
+          ask_variables_on_launch: true
+          ask_limit_on_launch: false
+          ask_inventory_on_launch: false
+          ask_credential_on_launch: false
+          survey_enabled: true
+          survey_spec: |
+            {
+              "name": "PRC Enrichment Configuration",
+              "description": "Configure the PRC enrichment job",
+              "spec": [
+                {
+                  "question_name": "Instana API Endpoint",
+                  "question_description": "The Instana API endpoint URL",
+                  "required": true,
+                  "type": "text",
+                  "variable": "instana_api_endpoint",
+                  "default": "https://release-instana.instana.rocks"
+                },
+                {
+                  "question_name": "Instana API Token",
+                  "question_description": "The Instana API token for authentication",
+                  "required": true,
+                  "type": "password",
+                  "variable": "instana_api_token",
+                  "default": ""
+                },
+                {
+                  "question_name": "Output Directory",
+                  "question_description": "Directory where the enriched PRC data will be saved",
+                  "required": true,
+                  "type": "text",
+                  "variable": "output_dir",
+                  "default": "/tmp/prc_enrichment_results"
+                },
+                {
+                  "question_name": "Output Filename",
+                  "question_description": "Filename for the enriched PRC data",
+                  "required": true,
+                  "type": "text",
+                  "variable": "output_filename",
+                  "default": "prc_label.json"
+                }
+              ]
+            }
+      register: job_template_response
+      when: 
+        - awx_inventory_id is defined
+        - awx_project_id is defined
+    
+    - name: Display job template creation result
+      debug:
+        var: job_template_response
+      when: job_template_response is defined
+
+# Made with Bob
