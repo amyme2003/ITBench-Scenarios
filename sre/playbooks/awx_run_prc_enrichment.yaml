@@ -29,18 +29,21 @@
         dest: "{{ output_dir }}/run_prc_enrichment.sh"
         mode: '0755'
       
-    - name: Install required Python packages
-      pip:
-        name:
-          - fastapi
-          - httpx
-          - uvicorn
-          - python-dotenv
-        state: present
+    - name: Install required Python packages using pip command
+      shell: |
+        pip3 install --user fastapi httpx uvicorn python-dotenv
+      args:
+        executable: /bin/bash
+      register: pip_result
+      
+    - name: Display pip install result
+      debug:
+        var: pip_result.stdout_lines
       
     - name: Run PRC enrichment shell script
       shell: |
         cd {{ output_dir }}
+        export PATH=$PATH:$HOME/.local/bin
         ./run_prc_enrichment.sh --token "{{ instana_api_token }}" --endpoint "{{ instana_api_endpoint }}" --dir "{{ output_dir }}" --filename "{{ output_filename }}"
       args:
         executable: /bin/bash
