@@ -2,7 +2,7 @@
 - name: Run PRC Enrichment Script in AWX
   hosts: localhost
   connection: local
-  gather_facts: false
+  gather_facts: true  # Changed to true to get ansible_date_time
   
   vars:
     instana_api_endpoint: "{{ instana_api_endpoint | default('https://release-instana.instana.rocks') }}"
@@ -29,6 +29,15 @@
         dest: "{{ output_dir }}/run_prc_enrichment.sh"
         mode: '0755'
       
+    - name: Install required Python packages
+      pip:
+        name:
+          - fastapi
+          - httpx
+          - uvicorn
+          - python-dotenv
+        state: present
+      
     - name: Run PRC enrichment shell script
       shell: |
         cd {{ output_dir }}
@@ -40,6 +49,15 @@
     - name: Display script output
       debug:
         var: script_result.stdout_lines
+        
+    - name: Check if output file exists
+      stat:
+        path: "{{ output_dir }}/{{ output_filename }}"
+      register: output_file
+      
+    - name: Display file status
+      debug:
+        msg: "Output file exists: {{ output_file.stat.exists }}, Size: {{ output_file.stat.size | default('0') }} bytes"
         
     - name: Display script result
       debug:
