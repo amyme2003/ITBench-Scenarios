@@ -5,28 +5,28 @@
   gather_facts: false
   
   vars:
-    repo_output_path: "../roles/prc_label/files/output/prc_label_output.json"
+    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
   
   tasks:
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
-        path: "../roles/prc_label/files/output"
+        path: "{{ playbook_dir }}/../roles/prc_label/files/output"
         state: directory
         mode: '0755'
       
     - name: Set temp script path in PRC label directory
       ansible.builtin.set_fact:
-        temp_script_path: "../roles/prc_label/files/temp/simple_prc_label.py"
+        temp_script_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/simple_prc_label.py"
 
     - name: Ensure temp directory exists in PRC label directory
       ansible.builtin.file:
-        path: "../roles/prc_label/files/temp"
+        path: "{{ playbook_dir }}/../roles/prc_label/files/temp"
         state: directory
         mode: '0755'
 
     - name: Copy simple PRC label script to execution environment
       ansible.builtin.copy:
-        src: ../roles/prc_label/files/simple_prc_label.py
+        src: "{{ playbook_dir }}/../roles/prc_label/files/simple_prc_label.py"
         dest: "{{ temp_script_path }}"
         mode: '0700'  # Only owner can read/write/execute
       
