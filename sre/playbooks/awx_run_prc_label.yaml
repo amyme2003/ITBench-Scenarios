@@ -1,0 +1,14 @@
+---
+- name: Run PRC Label in AWX
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  
+  tasks:
+    - name: Include PRC Label role
+      include_role:
+        name: prc_label
+      tags:
+        - prc_label
+
+# Made with Bob

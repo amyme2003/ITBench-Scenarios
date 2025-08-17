@@ -1,0 +1,59 @@
+---
+- name: Run PRC Enrichment Script
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  
+  vars:
+    instana_api_endpoint: "{{ instana_api_endpoint | default('https://release-instana.instana.rocks') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}"
+    output_dir: "/tmp/prc_enrichment_results"
+    output_filename: "prc_label.json"
+    output_path: "/tmp/prc_enrichment_results/prc_label.json"
+    
+  tasks:
+    - name: Create output directory if it doesn't exist
+      file:
+        path: "/tmp/prc_enrichment_results"
+        state: directory
+        mode: '0755'
+      
+    - name: Ensure required Python packages are installed
+      pip:
+        name:
+          - fastapi>=0.95.0
+          - httpx>=0.24.0
+          - uvicorn>=0.22.0
+          - pandas>=1.5.0
+          - python-dotenv>=1.0.0
+        state: present
+      
+    - name: Copy PRC enrichment script
+      copy:
+        src: "../roles/prc_enrichment/files/prc_enrichment.py"
+        dest: "/tmp/prc_enrichment_results/prc_enrichment.py"
+        mode: '0755'
+      
+    - name: Run PRC enrichment script
+      shell: |
+        export INSTANA_API_TOKEN="{{ instana_api_token }}"
+        export INSTANA_API_ENDPOINT="{{ instana_api_endpoint }}"
+        export PRC_OUTPUT_FILE="/tmp/prc_enrichment_results/prc_label.json"
+        python /tmp/prc_enrichment_results/prc_enrichment.py
+      args:
+        executable: /bin/bash
+      register: script_result
+      environment:
+        INSTANA_API_TOKEN: "{{ instana_api_token }}"
+        INSTANA_API_ENDPOINT: "{{ instana_api_endpoint }}"
+        PRC_OUTPUT_FILE: "/tmp/prc_enrichment_results/prc_label.json"
+      
+    - name: Display script result
+      debug:
+        msg: "PRC enrichment completed. Output saved to /tmp/prc_enrichment_results/prc_label.json"
+        
+    - name: Display timestamp for the results
+      debug:
+        msg: "Results generated at {{ ansible_date_time.iso8601 }}"
+
+# Made with Bob
