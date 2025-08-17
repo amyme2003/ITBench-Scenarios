@@ -4,28 +4,37 @@
   connection: local
   gather_facts: false
   
+  vars:
+    repo_output_path: "../roles/prc_label/files/output/prc_label_output.json"
+  
   tasks:
-    - name: Create a secure temporary directory
-      ansible.builtin.tempfile:
+    - name: Create output directory if it doesn't exist
+      ansible.builtin.file:
+        path: "../roles/prc_label/files/output"
         state: directory
-        suffix: prc_label
-      register: secure_temp_dir
+        mode: '0755'
       
+    - name: Set temp script path in PRC label directory
+      ansible.builtin.set_fact:
+        temp_script_path: "../roles/prc_label/files/temp/simple_prc_label.py"
+
+    - name: Ensure temp directory exists in PRC label directory
+      ansible.builtin.file:
+        path: "../roles/prc_label/files/temp"
+        state: directory
+        mode: '0755'
+
     - name: Copy simple PRC label script to execution environment
       ansible.builtin.copy:
         src: ../roles/prc_label/files/simple_prc_label.py
-        dest: "{{ secure_temp_dir.path }}/simple_prc_label.py"
+        dest: "{{ temp_script_path }}"
         mode: '0700'  # Only owner can read/write/execute
-      
-    - name: Set output path environment variable
-      ansible.builtin.set_fact:
-        output_path: "/tmp/prc_label.json"  # Fixed path for easy access
       
     - name: Run simple PRC label script
       ansible.builtin.command:
-        cmd: python {{ secure_temp_dir.path }}/simple_prc_label.py
+        cmd: python {{ temp_script_path }}
       environment:
-        PRC_OUTPUT_PATH: "{{ output_path }}"
+        PRC_OUTPUT_PATH: "{{ repo_output_path | realpath }}"
       register: prc_label_result
       
     - name: Display script output
@@ -34,7 +43,7 @@
       
     - name: Check if output file exists
       ansible.builtin.stat:
-        path: "{{ output_path }}"
+        path: "{{ repo_output_path }}"
       register: output_file
       
     - name: Display file status
@@ -43,7 +52,7 @@
       
     - name: Read output file if it exists
       ansible.builtin.slurp:
-        src: "{{ output_path }}"
+        src: "{{ repo_output_path }}"
       register: file_content
       when: output_file.stat.exists | default(false)
       
@@ -54,13 +63,12 @@
       
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: "The JSON output file is available at: {{ output_path }}"
+        msg: "The JSON output file has been saved to {{ repo_output_path }}"
       when: output_file.stat.exists | default(false)
       
-    - name: Clean up temporary directory
+    - name: Clean up temporary script
       ansible.builtin.file:
-        path: "{{ secure_temp_dir.path }}"
+        path: "{{ temp_script_path }}"
         state: absent
-      when: secure_temp_dir.path is defined
 
 # Made with Bob
