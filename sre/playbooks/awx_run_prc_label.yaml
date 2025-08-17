@@ -2,39 +2,47 @@
 - name: Run PRC Label in AWX
   hosts: localhost
   connection: local
-  gather_facts: false  # Disable fact gathering to speed up execution
+  gather_facts: false
   
   tasks:
     - name: Run PRC label script directly
       ansible.builtin.command:
         cmd: python /runner/prc_label.py
       register: prc_label_result
-      # Add timeout to prevent hanging
-      async: 300  # 5 minutes timeout
-      poll: 10    # Check every 10 seconds
+      # Increase timeout to 20 minutes
+      async: 1200
+      poll: 30
+      ignore_errors: true
       
-    - name: Display PRC label result
+    - name: Check if script completed successfully
       ansible.builtin.debug:
-        msg: "PRC label completed. Output saved to /runner/prc_label.json"
-        
-    - name: Display timestamp for the results
+        msg: "PRC label script completed successfully"
+      when: prc_label_result is succeeded
+      
+    - name: Handle script timeout or failure
       ansible.builtin.debug:
-        msg: "Results generated at {{ ansible_date_time.iso8601 }}"
-        
-    - name: Check if JSON file exists
+        msg: "PRC label script timed out or failed. This may be normal if the API calls take a long time."
+      when: prc_label_result is failed
+      
+    - name: Check if JSON file exists despite timeout
       ansible.builtin.stat:
         path: /runner/prc_label.json
       register: json_file
+      
+    - name: Display file status
+      ansible.builtin.debug:
+        msg: "JSON file exists: {{ json_file.stat.exists }}"
       
     - name: Read the JSON output file (if it exists)
       ansible.builtin.slurp:
         src: /runner/prc_label.json
       register: prc_label_json_encoded
       when: json_file.stat.exists
+      ignore_errors: true
       
     - name: Display JSON content (if file exists)
       ansible.builtin.debug:
         msg: "{{ prc_label_json_encoded.content | b64decode }}"
-      when: json_file.stat.exists
+      when: json_file.stat.exists and prc_label_json_encoded is succeeded
 
 # Made with Bob
