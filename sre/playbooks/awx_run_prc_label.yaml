@@ -2,19 +2,40 @@
 - name: Run PRC Label in AWX
   hosts: localhost
   connection: local
-  gather_facts: false  # Disable fact gathering to speed up execution
+  gather_facts: false
   
   tasks:
     - name: Run PRC label script
       ansible.builtin.command:
         cmd: python /runner/prc_label.py
       register: prc_label_result
-      # Add timeout to prevent hanging
-      async: 1200  # 20 minutes timeout
-      poll: 30     # Check every 30 seconds
+      async: 1800  # 30 minutes timeout
+      poll: 30
+      ignore_errors: true
       
-    - name: Display PRC label result
+    - name: Display script execution status
       ansible.builtin.debug:
-        msg: "PRC label completed. Output saved to prc_label.json"
+        msg: "Script execution {{ 'completed successfully' if prc_label_result is succeeded else 'timed out or failed' }}"
+      
+    - name: Check if output file exists
+      ansible.builtin.stat:
+        path: /runner/prc_label.json
+      register: output_file
+      
+    - name: Display file status
+      ansible.builtin.debug:
+        msg: "Output file exists: {{ output_file.stat.exists | default(false) }}"
+      
+    - name: Read output file if it exists
+      ansible.builtin.slurp:
+        src: /runner/prc_label.json
+      register: file_content
+      when: output_file.stat.exists | default(false)
+      ignore_errors: true
+      
+    - name: Display file content summary
+      ansible.builtin.debug:
+        msg: "Output file contains data (showing first 500 characters): {{ (file_content['content'] | b64decode)[:500] }}..."
+      when: output_file.stat.exists | default(false) and file_content is succeeded
 
 # Made with Bob
