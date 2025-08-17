@@ -17,5 +17,14 @@
     - name: Display timestamp for the results
       ansible.builtin.debug:
         msg: "Results generated at {{ ansible_date_time.iso8601 }}"
+        
+    - name: Read the JSON output file
+      ansible.builtin.slurp:
+        src: /runner/prc_label.json
+      register: prc_label_json_encoded
+      
+    - name: Display JSON content
+      ansible.builtin.debug:
+        msg: "{{ prc_label_json_encoded.content | b64decode }}"
 
-# Made with Bob
+
