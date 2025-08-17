@@ -5,23 +5,18 @@
   gather_facts: false
   
   vars:
-    # This is the path in the project directory structure
-    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
-    # This is the path on the local machine where the file will be fetched to
-    local_output_path: "{{ lookup('env', 'HOME') }}/prc_label_output.json"
+    # This is the path in the project directory structure that will be accessible both in the container and locally
+    repo_output_path: "/runner/project/sre/roles/prc_label/files/output/prc_label_output.json"
   
   tasks:
     - name: Display paths for debugging
       ansible.builtin.debug:
         msg: 
-          - "Playbook directory: {{ playbook_dir }}"
           - "Output path: {{ repo_output_path }}"
-          - "Resolved output path: {{ repo_output_path | realpath }}"
-          - "Local output path: {{ local_output_path }}"
     
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
-        path: "{{ playbook_dir }}/../roles/prc_label/files/output"
+        path: "/runner/project/sre/roles/prc_label/files/output"
         state: directory
         mode: '0755'
       
@@ -97,11 +92,6 @@
                   else:
                       print(f"ERROR: File was not created: {output_path}")
                   
-                  # Print the JSON to stdout for Ansible to capture
-                  print("\n--- BEGIN JSON OUTPUT ---")
-                  print(json.dumps(output, indent=2))
-                  print("--- END JSON OUTPUT ---\n")
-                  
                   return 0
               except Exception as e:
                   print(f"Error: {e}", file=sys.stderr)
@@ -117,7 +107,7 @@
       ansible.builtin.command:
         cmd: python /tmp/run_prc_label.py
       environment:
-        OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
+        OUTPUT_FILE_PATH: "{{ repo_output_path }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
@@ -130,18 +120,6 @@
       ansible.builtin.debug:
         msg: "{{ prc_label_result.stderr_lines }}"
       when: prc_label_result.stderr_lines is defined
-      
-    - name: Extract JSON from script output
-      ansible.builtin.set_fact:
-        json_output_str: "{{ prc_label_result.stdout.split('--- BEGIN JSON OUTPUT ---')[1].split('--- END JSON OUTPUT ---')[0] | trim }}"
-      when: prc_label_result.stdout is defined and '--- BEGIN JSON OUTPUT ---' in prc_label_result.stdout
-      ignore_errors: true
-      
-    - name: Write extracted JSON to output file
-      ansible.builtin.copy:
-        content: "{{ json_output_str }}"
-        dest: "{{ repo_output_path }}"
-      when: json_output_str is defined
       
     - name: Check if output file exists
       ansible.builtin.stat:
@@ -163,18 +141,9 @@
         msg: "{{ (file_content['content'] | b64decode)[:500] }}..."
       when: output_file.stat.exists | default(false) and file_content is succeeded
       
-    - name: Fetch the output file to local machine
-      ansible.builtin.fetch:
-        src: "{{ repo_output_path }}"
-        dest: "{{ local_output_path }}"
-        flat: yes
-      when: output_file.stat.exists | default(false)
-      
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: 
-          - "The JSON output file has been saved to {{ repo_output_path }} in the container"
-          - "The JSON output file has been fetched to {{ local_output_path }} on your local machine"
+        msg: "The JSON output file has been saved to {{ repo_output_path }} and will be accessible in your local repository"
       when: output_file.stat.exists | default(false)
       
     - name: Clean up temporary script
