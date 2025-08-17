@@ -22,28 +22,54 @@
           import json
           import os
           import sys
-          from prc_label import fetch_prc_details
-
+          import traceback
+          
+          # Add the runner directory to the path
+          sys.path.append('/runner')
+          
+          try:
+              from prc_label import fetch_incidents_data, filter_prc_incidents, process_incident
+          except ImportError as e:
+              print(f"Error importing from prc_label.py: {e}")
+              sys.exit(1)
+          
           async def main():
               output_path = os.environ.get("OUTPUT_FILE_PATH", "/tmp/prc_label_output.json")
               try:
-                  print("Fetching PRC details...")
-                  result = await fetch_prc_details()
+                  print("Fetching incidents data...")
+                  incidents_data = await fetch_incidents_data()
+                  print(f"Fetched {len(incidents_data)} incidents")
                   
-                  # Convert result to dict if it's a JSONResponse
-                  if hasattr(result, 'body'):
-                      import json
-                      result = json.loads(await result.body())
+                  print("Filtering PRC incidents...")
+                  prc_incidents = filter_prc_incidents(incidents_data)
+                  print(f"Found {len(prc_incidents)} PRC incidents")
+                  
+                  print("Processing incidents...")
+                  output = {}
+                  
+                  # Process each incident one by one
+                  for i, incident in enumerate(prc_incidents):
+                      try:
+                          print(f"Processing incident {i+1}/{len(prc_incidents)}")
+                          key, entry = await process_incident(incident)
+                          output[key] = entry
+                      except Exception as e:
+                          print(f"Error processing incident {i+1}: {e}")
+                          traceback.print_exc()
+                  
+                  # Create directory if it doesn't exist
+                  os.makedirs(os.path.dirname(output_path), exist_ok=True)
                   
                   # Save to file
                   with open(output_path, "w") as f:
-                      json.dump(result, f, indent=4)
+                      json.dump(output, f, indent=4)
                   print(f"Output saved to {output_path}")
                   return 0
               except Exception as e:
                   print(f"Error: {e}", file=sys.stderr)
+                  traceback.print_exc()
                   return 1
-
+          
           if __name__ == "__main__":
               sys.exit(asyncio.run(main()))
         dest: /tmp/run_prc_label.py
@@ -56,10 +82,16 @@
         OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
+      ignore_errors: true
       
     - name: Display script output
       ansible.builtin.debug:
         msg: "{{ prc_label_result.stdout_lines }}"
+      
+    - name: Display script error output
+      ansible.builtin.debug:
+        msg: "{{ prc_label_result.stderr_lines }}"
+      when: prc_label_result.stderr_lines is defined
       
     - name: Check if output file exists
       ansible.builtin.stat:
