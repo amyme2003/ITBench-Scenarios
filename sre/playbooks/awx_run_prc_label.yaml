@@ -5,10 +5,17 @@
   gather_facts: false
   
   vars:
+    # This is the path in the project directory structure
     repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
-    temp_output_path: "/tmp/prc_label_output.json"
   
   tasks:
+    - name: Display paths for debugging
+      ansible.builtin.debug:
+        msg: 
+          - "Playbook directory: {{ playbook_dir }}"
+          - "Output path: {{ repo_output_path }}"
+          - "Resolved output path: {{ repo_output_path | realpath }}"
+    
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ playbook_dir }}/../roles/prc_label/files/output"
@@ -35,7 +42,11 @@
               sys.exit(1)
           
           async def main():
-              output_path = os.environ.get("OUTPUT_FILE_PATH", "/tmp/prc_label_output.json")
+              output_path = os.environ.get("OUTPUT_FILE_PATH")
+              if not output_path:
+                  print("ERROR: OUTPUT_FILE_PATH environment variable is not set")
+                  return 1
+                  
               print(f"Output will be saved to: {output_path}")
               
               try:
@@ -83,6 +94,11 @@
                   else:
                       print(f"ERROR: File was not created: {output_path}")
                   
+                  # Print the JSON to stdout for Ansible to capture
+                  print("\n--- BEGIN JSON OUTPUT ---")
+                  print(json.dumps(output, indent=2))
+                  print("--- END JSON OUTPUT ---\n")
+                  
                   return 0
               except Exception as e:
                   print(f"Error: {e}", file=sys.stderr)
@@ -98,7 +114,7 @@
       ansible.builtin.command:
         cmd: python /tmp/run_prc_label.py
       environment:
-        OUTPUT_FILE_PATH: "{{ temp_output_path }}"
+        OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
@@ -112,30 +128,46 @@
         msg: "{{ prc_label_result.stderr_lines }}"
       when: prc_label_result.stderr_lines is defined
       
-    - name: Read the generated output file
-      ansible.builtin.slurp:
-        src: "{{ temp_output_path }}"
-      register: temp_file_content
+    - name: Extract JSON from script output
+      ansible.builtin.set_fact:
+        json_output: "{{ prc_label_result.stdout.split('--- BEGIN JSON OUTPUT ---')[1].split('--- END JSON OUTPUT ---')[0] | trim }}"
+      when: prc_label_result.stdout is defined and '--- BEGIN JSON OUTPUT ---' in prc_label_result.stdout
       ignore_errors: true
       
-    - name: Display the full JSON output
-      ansible.builtin.debug:
-        msg: "{{ (temp_file_content.content | b64decode | from_json) | to_nice_json(indent=2) }}"
-      when: temp_file_content is succeeded
-      
-    - name: Copy the output file to the repository
+    - name: Write extracted JSON to output file
       ansible.builtin.copy:
-        src: "{{ temp_output_path }}"
+        content: "{{ json_output | from_json | to_nice_json(indent=4) }}"
         dest: "{{ repo_output_path }}"
-        remote_src: true
-      when: temp_file_content is succeeded
+      when: json_output is defined
       
-    - name: Clean up temporary script and output
+    - name: Check if output file exists
+      ansible.builtin.stat:
+        path: "{{ repo_output_path }}"
+      register: output_file
+      
+    - name: Display file status
+      ansible.builtin.debug:
+        msg: "Output file exists: {{ output_file.stat.exists | default(false) }}"
+      
+    - name: Read output file if it exists
+      ansible.builtin.slurp:
+        src: "{{ repo_output_path }}"
+      register: file_content
+      when: output_file.stat.exists | default(false)
+      
+    - name: Display file content
+      ansible.builtin.debug:
+        msg: "{{ file_content['content'] | b64decode }}"
+      when: output_file.stat.exists | default(false) and file_content is succeeded
+      
+    - name: Show where to find the JSON output
+      ansible.builtin.debug:
+        msg: "The JSON output file has been saved to {{ repo_output_path }}"
+      when: output_file.stat.exists | default(false)
+      
+    - name: Clean up temporary script
       ansible.builtin.file:
-        path: "{{ item }}"
+        path: /tmp/run_prc_label.py
         state: absent
-      with_items:
-        - /tmp/run_prc_label.py
-        - "{{ temp_output_path }}"
 
 # Made with Bob
