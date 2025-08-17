@@ -5,16 +5,10 @@
   gather_facts: false
   
   vars:
-    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_complex_output.json"
+    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
+    temp_output_path: "/tmp/prc_label_output.json"
   
   tasks:
-    - name: Display paths for debugging
-      ansible.builtin.debug:
-        msg: 
-          - "Playbook directory: {{ playbook_dir }}"
-          - "Output path: {{ repo_output_path }}"
-          - "Resolved output path: {{ repo_output_path | realpath }}"
-    
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ playbook_dir }}/../roles/prc_label/files/output"
@@ -56,12 +50,16 @@
                   print("Processing incidents...")
                   output = {}
                   
-                  # Process each incident one by one
+                  # Process each incident one by one (limit to 2 for demonstration)
+                  count = 0
                   for i, incident in enumerate(prc_incidents):
+                      if count >= 2:  # Only process 2 incidents for demo
+                          break
                       try:
                           print(f"Processing incident {i+1}/{len(prc_incidents)}")
                           key, entry = await process_incident(incident)
                           output[key] = entry
+                          count += 1
                       except Exception as e:
                           print(f"Error processing incident {i+1}: {e}")
                           traceback.print_exc()
@@ -100,7 +98,7 @@
       ansible.builtin.command:
         cmd: python /tmp/run_prc_label.py
       environment:
-        OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
+        OUTPUT_FILE_PATH: "{{ temp_output_path }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
@@ -114,36 +112,30 @@
         msg: "{{ prc_label_result.stderr_lines }}"
       when: prc_label_result.stderr_lines is defined
       
-    - name: Check if output file exists
-      ansible.builtin.stat:
-        path: "{{ repo_output_path }}"
-      register: output_file
-      
-    - name: Display file status and details
-      ansible.builtin.debug:
-        msg: 
-          - "Output file exists: {{ output_file.stat.exists | default(false) }}"
-          - "File details: {{ output_file.stat | default({}) }}"
-      
-    - name: Read output file if it exists
+    - name: Read the generated output file
       ansible.builtin.slurp:
-        src: "{{ repo_output_path }}"
-      register: file_content
-      when: output_file.stat.exists | default(false)
+        src: "{{ temp_output_path }}"
+      register: temp_file_content
+      ignore_errors: true
       
-    - name: Display file content
+    - name: Display the full JSON output
       ansible.builtin.debug:
-        msg: "{{ file_content['content'] | b64decode }}"
-      when: output_file.stat.exists | default(false) and file_content is succeeded
+        msg: "{{ (temp_file_content.content | b64decode | from_json) | to_nice_json(indent=2) }}"
+      when: temp_file_content is succeeded
       
-    - name: Show where to find the JSON output
-      ansible.builtin.debug:
-        msg: "The JSON output file has been saved to {{ repo_output_path }}"
-      when: output_file.stat.exists | default(false)
+    - name: Copy the output file to the repository
+      ansible.builtin.copy:
+        src: "{{ temp_output_path }}"
+        dest: "{{ repo_output_path }}"
+        remote_src: true
+      when: temp_file_content is succeeded
       
-    - name: Clean up temporary script
+    - name: Clean up temporary script and output
       ansible.builtin.file:
-        path: /tmp/run_prc_label.py
+        path: "{{ item }}"
         state: absent
+      with_items:
+        - /tmp/run_prc_label.py
+        - "{{ temp_output_path }}"
 
 # Made with Bob
