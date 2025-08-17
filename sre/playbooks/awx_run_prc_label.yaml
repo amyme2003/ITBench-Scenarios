@@ -5,7 +5,7 @@
   gather_facts: false
   
   vars:
-    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
+    repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_complex_output.json"
   
   tasks:
     - name: Display paths for debugging
