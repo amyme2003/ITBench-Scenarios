@@ -130,15 +130,15 @@
       
     - name: Extract JSON from script output
       ansible.builtin.set_fact:
-        json_output: "{{ prc_label_result.stdout.split('--- BEGIN JSON OUTPUT ---')[1].split('--- END JSON OUTPUT ---')[0] | trim }}"
+        json_output_str: "{{ prc_label_result.stdout.split('--- BEGIN JSON OUTPUT ---')[1].split('--- END JSON OUTPUT ---')[0] | trim }}"
       when: prc_label_result.stdout is defined and '--- BEGIN JSON OUTPUT ---' in prc_label_result.stdout
       ignore_errors: true
       
     - name: Write extracted JSON to output file
       ansible.builtin.copy:
-        content: "{{ json_output | from_json | to_nice_json(indent=4) }}"
+        content: "{{ json_output_str }}"
         dest: "{{ repo_output_path }}"
-      when: json_output is defined
+      when: json_output_str is defined
       
     - name: Check if output file exists
       ansible.builtin.stat:
@@ -155,9 +155,9 @@
       register: file_content
       when: output_file.stat.exists | default(false)
       
-    - name: Display file content
+    - name: Display file content (first 500 characters)
       ansible.builtin.debug:
-        msg: "{{ file_content['content'] | b64decode }}"
+        msg: "{{ (file_content['content'] | b64decode)[:500] }}..."
       when: output_file.stat.exists | default(false) and file_content is succeeded
       
     - name: Show where to find the JSON output
