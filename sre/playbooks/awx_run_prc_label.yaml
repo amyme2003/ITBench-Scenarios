@@ -8,6 +8,13 @@
     repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
   
   tasks:
+    - name: Display paths for debugging
+      ansible.builtin.debug:
+        msg: 
+          - "Playbook directory: {{ playbook_dir }}"
+          - "Output path: {{ repo_output_path }}"
+          - "Resolved output path: {{ repo_output_path | realpath }}"
+    
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ playbook_dir }}/../roles/prc_label/files/output"
@@ -35,6 +42,8 @@
           
           async def main():
               output_path = os.environ.get("OUTPUT_FILE_PATH", "/tmp/prc_label_output.json")
+              print(f"Output will be saved to: {output_path}")
+              
               try:
                   print("Fetching incidents data...")
                   incidents_data = await fetch_incidents_data()
@@ -58,12 +67,24 @@
                           traceback.print_exc()
                   
                   # Create directory if it doesn't exist
-                  os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                  output_dir = os.path.dirname(output_path)
+                  if output_dir:
+                      print(f"Creating directory: {output_dir}")
+                      os.makedirs(output_dir, exist_ok=True)
                   
                   # Save to file
+                  print(f"Writing output to file: {output_path}")
                   with open(output_path, "w") as f:
                       json.dump(output, f, indent=4)
-                  print(f"Output saved to {output_path}")
+                  
+                  # Verify file was written
+                  if os.path.exists(output_path):
+                      print(f"File successfully written: {output_path}")
+                      file_size = os.path.getsize(output_path)
+                      print(f"File size: {file_size} bytes")
+                  else:
+                      print(f"ERROR: File was not created: {output_path}")
+                  
                   return 0
               except Exception as e:
                   print(f"Error: {e}", file=sys.stderr)
@@ -98,9 +119,11 @@
         path: "{{ repo_output_path }}"
       register: output_file
       
-    - name: Display file status
+    - name: Display file status and details
       ansible.builtin.debug:
-        msg: "Output file exists: {{ output_file.stat.exists | default(false) }}"
+        msg: 
+          - "Output file exists: {{ output_file.stat.exists | default(false) }}"
+          - "File details: {{ output_file.stat | default({}) }}"
       
     - name: Read output file if it exists
       ansible.builtin.slurp:
