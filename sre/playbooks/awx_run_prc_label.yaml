@@ -14,51 +14,47 @@
         state: directory
         mode: '0755'
       
-    - name: Set temp script paths in PRC label directory
-      ansible.builtin.set_fact:
-        temp_dir: "{{ playbook_dir }}/../roles/prc_label/files/temp"
-        temp_script_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/prc_label.py"
-        temp_cli_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/prc_label_cli.py"
-        temp_env_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/.env"
-
-    - name: Ensure temp directory exists in PRC label directory
-      ansible.builtin.file:
-        path: "{{ temp_dir }}"
-        state: directory
-        mode: '0755'
-
-    - name: Copy PRC label scripts to execution environment
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../roles/prc_label/files/{{ item.src }}"
-        dest: "{{ temp_dir }}/{{ item.src }}"
-        mode: '0700'  # Only owner can read/write/execute
-      with_items:
-        - { src: "prc_label.py" }
-        - { src: "prc_label_cli.py" }
-    
-    - name: Create .env file with required environment variables
+    - name: Create a simple CLI wrapper for prc_label.py
       ansible.builtin.copy:
         content: |
-          INSTANA_API_TOKEN={{ instana_api_token | default('dummy_token_for_testing') }}
-          INSTANA_API_ENDPOINT={{ instana_api_endpoint | default('https://release-instana.instana.rocks') }}
-        dest: "{{ temp_env_path }}"
-        mode: '0600'  # Only owner can read/write
+          #!/usr/bin/env python3
+          import asyncio
+          import json
+          import os
+          import sys
+          from prc_label import fetch_prc_details
+
+          async def main():
+              output_path = os.environ.get("OUTPUT_FILE_PATH", "/tmp/prc_label_output.json")
+              try:
+                  print("Fetching PRC details...")
+                  result = await fetch_prc_details()
+                  
+                  # Convert result to dict if it's a JSONResponse
+                  if hasattr(result, 'body'):
+                      import json
+                      result = json.loads(await result.body())
+                  
+                  # Save to file
+                  with open(output_path, "w") as f:
+                      json.dump(result, f, indent=4)
+                  print(f"Output saved to {output_path}")
+                  return 0
+              except Exception as e:
+                  print(f"Error: {e}", file=sys.stderr)
+                  return 1
+
+          if __name__ == "__main__":
+              sys.exit(asyncio.run(main()))
+        dest: /tmp/run_prc_label.py
+        mode: '0700'
       
-    - name: Install required Python packages
-      ansible.builtin.pip:
-        name:
-          - fastapi>=0.95.0
-          - httpx>=0.24.0
-          - uvicorn>=0.22.0
-          - python-dotenv>=1.0.0
-        state: present
-      
-    - name: Run PRC label CLI script
+    - name: Run PRC label script from execution environment
       ansible.builtin.command:
-        cmd: python {{ temp_dir }}/prc_label_cli.py
+        cmd: python /tmp/run_prc_label.py
       environment:
         OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
-        PYTHONPATH: "{{ temp_dir }}:{{ ansible_env.PYTHONPATH | default('') }}"
+        PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       
     - name: Display script output
@@ -90,9 +86,9 @@
         msg: "The JSON output file has been saved to {{ repo_output_path }}"
       when: output_file.stat.exists | default(false)
       
-    - name: Clean up temporary files
+    - name: Clean up temporary script
       ansible.builtin.file:
-        path: "{{ temp_dir }}"
+        path: /tmp/run_prc_label.py
         state: absent
 
 # Made with Bob
