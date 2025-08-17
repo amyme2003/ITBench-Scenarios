@@ -2,70 +2,16 @@
 - name: Run PRC Label in AWX
   hosts: localhost
   connection: local
-  gather_facts: false
+  gather_facts: true
   
   tasks:
-    - name: Check Python environment
+    - name: Run PRC label script
       ansible.builtin.command:
-        cmd: python -c "import os; print(os.getcwd()); print(os.path.dirname('/runner/prc_label.py'))"
-      register: python_env
-      
-    - name: Display Python environment
-      ansible.builtin.debug:
-        msg: "{{ python_env.stdout_lines }}"
-    
-    - name: Run PRC label script with explicit output path
-      ansible.builtin.command:
-        cmd: python /runner/prc_label.py --output /tmp/prc_label.json
+        cmd: python /runner/prc_label.py
       register: prc_label_result
-      # Increase timeout to 20 minutes
-      async: 1200
-      poll: 30
-      ignore_errors: true
-      environment:
-        PRC_OUTPUT_FILE: "/tmp/prc_label.json"
       
-    - name: Check if script completed successfully
+    - name: Display PRC label result
       ansible.builtin.debug:
-        msg: "PRC label script completed successfully"
-      when: prc_label_result is succeeded
-      
-    - name: Handle script timeout or failure
-      ansible.builtin.debug:
-        msg: "PRC label script timed out or failed. This may be normal if the API calls take a long time."
-      when: prc_label_result is failed
-      
-    - name: Check multiple possible locations for JSON file
-      ansible.builtin.stat:
-        path: "{{ item }}"
-      register: json_files
-      loop:
-        - "/runner/prc_label.json"
-        - "/tmp/prc_label.json"
-        - "./prc_label.json"
-        - "/runner/project/prc_label.json"
-      
-    - name: Display file status for all checked locations
-      ansible.builtin.debug:
-        msg: "{{ item.item }} exists: {{ item.stat.exists | default(false) }}"
-      loop: "{{ json_files.results }}"
-      
-    - name: Set fact for found JSON file
-      ansible.builtin.set_fact:
-        found_json_file: "{{ item.item }}"
-      loop: "{{ json_files.results }}"
-      when: item.stat.exists | default(false)
-      
-    - name: Read the JSON output file (if it exists)
-      ansible.builtin.slurp:
-        src: "{{ found_json_file }}"
-      register: prc_label_json_encoded
-      when: found_json_file is defined
-      ignore_errors: true
-      
-    - name: Display JSON content (if file exists)
-      ansible.builtin.debug:
-        msg: "{{ prc_label_json_encoded.content | b64decode }}"
-      when: found_json_file is defined and prc_label_json_encoded is succeeded
+        msg: "PRC label completed. Output saved to prc_label.json"
 
 # Made with Bob
