@@ -5,21 +5,36 @@
   gather_facts: false
   
   tasks:
-    - name: Run PRC label script
-      ansible.builtin.command:
-        cmd: python /runner/prc_label.py
-      register: prc_label_result
-      async: 1800  # 30 minutes timeout
-      poll: 30
-      ignore_errors: true
+    - name: Create a secure temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: prc_label
+      register: secure_temp_dir
       
-    - name: Display script execution status
+    - name: Copy simple PRC label script to execution environment
+      ansible.builtin.copy:
+        src: ../roles/prc_label/files/simple_prc_label.py
+        dest: "{{ secure_temp_dir.path }}/simple_prc_label.py"
+        mode: '0700'  # Only owner can read/write/execute
+      
+    - name: Set output path environment variable
+      ansible.builtin.set_fact:
+        output_path: "{{ secure_temp_dir.path }}/prc_label.json"
+      
+    - name: Run simple PRC label script
+      ansible.builtin.command:
+        cmd: python {{ secure_temp_dir.path }}/simple_prc_label.py
+      environment:
+        PRC_OUTPUT_PATH: "{{ output_path }}"
+      register: prc_label_result
+      
+    - name: Display script output
       ansible.builtin.debug:
-        msg: "Script execution {{ 'completed successfully' if prc_label_result is succeeded else 'timed out or failed' }}"
+        msg: "{{ prc_label_result.stdout_lines }}"
       
     - name: Check if output file exists
       ansible.builtin.stat:
-        path: /runner/prc_label.json
+        path: "{{ output_path }}"
       register: output_file
       
     - name: Display file status
@@ -28,14 +43,19 @@
       
     - name: Read output file if it exists
       ansible.builtin.slurp:
-        src: /runner/prc_label.json
+        src: "{{ output_path }}"
       register: file_content
       when: output_file.stat.exists | default(false)
-      ignore_errors: true
       
-    - name: Display file content summary
+    - name: Display file content
       ansible.builtin.debug:
-        msg: "Output file contains data (showing first 500 characters): {{ (file_content['content'] | b64decode)[:500] }}..."
+        msg: "{{ file_content['content'] | b64decode }}"
       when: output_file.stat.exists | default(false) and file_content is succeeded
+      
+    - name: Clean up temporary directory
+      ansible.builtin.file:
+        path: "{{ secure_temp_dir.path }}"
+        state: absent
+      when: secure_temp_dir.path is defined
 
 # Made with Bob
