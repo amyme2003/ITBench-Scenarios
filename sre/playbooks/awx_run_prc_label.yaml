@@ -8,6 +8,7 @@
     # This is the path for artifacts in AWX
     artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') | default('/tmp', true) }}/artifacts"
     output_filename: "prc_label_output.json"
+    output_path: "{{ artifacts_dir }}/{{ output_filename }}"
   
   tasks:
     - name: Create artifacts directory if it doesn't exist
@@ -103,7 +104,7 @@
       ansible.builtin.command:
         cmd: python /tmp/run_prc_label.py
       environment:
-        OUTPUT_FILE_PATH: "{{ artifacts_dir }}/{{ output_filename }}"
+        OUTPUT_FILE_PATH: "{{ output_path }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
@@ -119,7 +120,7 @@
       
     - name: Check if output file exists
       ansible.builtin.stat:
-        path: "{{ artifacts_dir }}/{{ output_filename }}"
+        path: "{{ output_path }}"
       register: output_file
       
     - name: Display file status
@@ -128,7 +129,7 @@
       
     - name: Read output file if it exists
       ansible.builtin.slurp:
-        src: "{{ artifacts_dir }}/{{ output_filename }}"
+        src: "{{ output_path }}"
       register: file_content
       when: output_file.stat.exists | default(false)
       
@@ -137,9 +138,16 @@
         msg: "{{ (file_content['content'] | b64decode)[:500] }}..."
       when: output_file.stat.exists | default(false) and file_content is succeeded
       
+    - name: Attach PRC JSON as artifact
+      ansible.builtin.set_stats:
+        data:
+          prc_label_output: "{{ lookup('file', output_path) }}"
+        per_host: no
+      when: output_file.stat.exists | default(false)
+      
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: "The JSON output file has been saved as an artifact and can be downloaded from the AWX job details page"
+        msg: "The JSON output file has been attached as an artifact and can be viewed in the AWX job details page under Artifacts → JSON"
       when: output_file.stat.exists | default(false)
       
     - name: Clean up temporary script
