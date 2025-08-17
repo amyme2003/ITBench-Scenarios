@@ -14,27 +14,51 @@
         state: directory
         mode: '0755'
       
-    - name: Set temp script path in PRC label directory
+    - name: Set temp script paths in PRC label directory
       ansible.builtin.set_fact:
-        temp_script_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/simple_prc_label.py"
+        temp_dir: "{{ playbook_dir }}/../roles/prc_label/files/temp"
+        temp_script_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/prc_label.py"
+        temp_cli_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/prc_label_cli.py"
+        temp_env_path: "{{ playbook_dir }}/../roles/prc_label/files/temp/.env"
 
     - name: Ensure temp directory exists in PRC label directory
       ansible.builtin.file:
-        path: "{{ playbook_dir }}/../roles/prc_label/files/temp"
+        path: "{{ temp_dir }}"
         state: directory
         mode: '0755'
 
-    - name: Copy simple PRC label script to execution environment
+    - name: Copy PRC label scripts to execution environment
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../roles/prc_label/files/simple_prc_label.py"
-        dest: "{{ temp_script_path }}"
+        src: "{{ playbook_dir }}/../roles/prc_label/files/{{ item.src }}"
+        dest: "{{ temp_dir }}/{{ item.src }}"
         mode: '0700'  # Only owner can read/write/execute
+      with_items:
+        - { src: "prc_label.py" }
+        - { src: "prc_label_cli.py" }
+    
+    - name: Create .env file with required environment variables
+      ansible.builtin.copy:
+        content: |
+          INSTANA_API_TOKEN={{ instana_api_token | default('dummy_token_for_testing') }}
+          INSTANA_API_ENDPOINT={{ instana_api_endpoint | default('https://release-instana.instana.rocks') }}
+        dest: "{{ temp_env_path }}"
+        mode: '0600'  # Only owner can read/write
       
-    - name: Run simple PRC label script
+    - name: Install required Python packages
+      ansible.builtin.pip:
+        name:
+          - fastapi>=0.95.0
+          - httpx>=0.24.0
+          - uvicorn>=0.22.0
+          - python-dotenv>=1.0.0
+        state: present
+      
+    - name: Run PRC label CLI script
       ansible.builtin.command:
-        cmd: python {{ temp_script_path }}
+        cmd: python {{ temp_dir }}/prc_label_cli.py
       environment:
-        PRC_OUTPUT_PATH: "{{ repo_output_path | realpath }}"
+        OUTPUT_FILE_PATH: "{{ repo_output_path | realpath }}"
+        PYTHONPATH: "{{ temp_dir }}:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       
     - name: Display script output
@@ -66,9 +90,9 @@
         msg: "The JSON output file has been saved to {{ repo_output_path }}"
       when: output_file.stat.exists | default(false)
       
-    - name: Clean up temporary script
+    - name: Clean up temporary files
       ansible.builtin.file:
-        path: "{{ temp_script_path }}"
+        path: "{{ temp_dir }}"
         state: absent
 
 # Made with Bob
