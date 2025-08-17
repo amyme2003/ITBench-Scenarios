@@ -1,0 +1,95 @@
+---
+- name: Set home directory explicitly
+  set_fact:
+    home_dir: "{{ lookup('env', 'HOME') }}"
+  tags:
+    - prc_enrichment
+
+- name: Create directories for PRC enrichment
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ prc_enrichment_venv_path }}"
+    - "{{ prc_enrichment_output_dir }}"
+    - "{{ prc_enrichment_script_path | dirname }}"
+  tags:
+    - prc_enrichment
+
+- name: Create virtual environment for PRC enrichment
+  ansible.builtin.pip:
+    name: virtualenv
+    state: present
+  tags:
+    - prc_enrichment
+
+- name: Install required packages in virtual environment
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    virtualenv: "{{ prc_enrichment_venv_path }}"
+    virtualenv_command: "{{ virtualenv_command | default('python -m venv') }}"
+    requirements: "{{ role_path }}/files/requirements.txt"
+  tags:
+    - prc_enrichment
+
+- name: Copy PRC enrichment script
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/prc_enrichment.py"
+    dest: "{{ prc_enrichment_script_path }}"
+    mode: '0755'
+  tags:
+    - prc_enrichment
+
+- name: Create .env file for PRC enrichment
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/prc_env.j2"
+    dest: "{{ prc_enrichment_env_path }}"
+    mode: '0600'
+  tags:
+    - prc_enrichment
+
+- name: Run PRC enrichment script
+  ansible.builtin.shell: |
+    source {{ prc_enrichment_venv_path }}/bin/activate
+    export INSTANA_API_TOKEN="{{ instana_api_token }}"
+    export INSTANA_API_ENDPOINT="{{ instana_api_endpoint }}"
+    export PRC_OUTPUT_FILE="{{ prc_enrichment_output_path }}"
+    python {{ prc_enrichment_script_path }}
+  args:
+    executable: /bin/bash
+  register: prc_enrichment_result
+  when: prc_enrichment_run | default(true)
+  tags:
+    - prc_enrichment
+
+- name: Display PRC enrichment result
+  ansible.builtin.debug:
+    msg: "PRC enrichment completed. Output saved to {{ prc_enrichment_output_path }}"
+  when: prc_enrichment_run | default(true)
+  tags:
+    - prc_enrichment
+
+- name: Display timestamp for the results
+  ansible.builtin.debug:
+    msg: "Results generated at {{ ansible_date_time.iso8601 }}"
+  when: prc_enrichment_run | default(true)
+  tags:
+    - prc_enrichment
+
+- name: Upload PRC enrichment results to S3
+  amazon.aws.s3_object:
+    endpoint_url: "{{ s3_endpoint_url }}"
+    bucket: "{{ s3_bucket_name_for_results }}"
+    object: "/{{ prc_enrichment_name__version_number }}/{{ run_uuid }}/prc_enrichment_results.json"
+    src: "{{ prc_enrichment_output_path }}"
+    mode: put
+  when: 
+    - prc_enrichment_run | default(true)
+    - run_uuid is defined
+    - s3_bucket_name_for_results is defined
+    - s3_endpoint_url is defined
+  tags:
+    - prc_enrichment
+
+# Made with Bob
