@@ -7,6 +7,8 @@
   vars:
     # This is the path in the project directory structure
     repo_output_path: "{{ playbook_dir }}/../roles/prc_label/files/output/prc_label_output.json"
+    # This is the path on the local machine where the file will be fetched to
+    local_output_path: "{{ lookup('env', 'HOME') }}/prc_label_output.json"
   
   tasks:
     - name: Display paths for debugging
@@ -15,6 +17,7 @@
           - "Playbook directory: {{ playbook_dir }}"
           - "Output path: {{ repo_output_path }}"
           - "Resolved output path: {{ repo_output_path | realpath }}"
+          - "Local output path: {{ local_output_path }}"
     
     - name: Create output directory if it doesn't exist
       ansible.builtin.file:
@@ -160,9 +163,18 @@
         msg: "{{ (file_content['content'] | b64decode)[:500] }}..."
       when: output_file.stat.exists | default(false) and file_content is succeeded
       
+    - name: Fetch the output file to local machine
+      ansible.builtin.fetch:
+        src: "{{ repo_output_path }}"
+        dest: "{{ local_output_path }}"
+        flat: yes
+      when: output_file.stat.exists | default(false)
+      
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: "The JSON output file has been saved to {{ repo_output_path }}"
+        msg: 
+          - "The JSON output file has been saved to {{ repo_output_path }} in the container"
+          - "The JSON output file has been fetched to {{ local_output_path }} on your local machine"
       when: output_file.stat.exists | default(false)
       
     - name: Clean up temporary script
