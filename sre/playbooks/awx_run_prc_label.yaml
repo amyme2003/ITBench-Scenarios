@@ -2,13 +2,16 @@
 - name: Run PRC Label in AWX
   hosts: localhost
   connection: local
-  gather_facts: true
+  gather_facts: false  # Disable fact gathering to speed up execution
   
   tasks:
     - name: Run PRC label script directly
       ansible.builtin.command:
         cmd: python /runner/prc_label.py
       register: prc_label_result
+      # Add timeout to prevent hanging
+      async: 300  # 5 minutes timeout
+      poll: 10    # Check every 10 seconds
       
     - name: Display PRC label result
       ansible.builtin.debug:
@@ -18,13 +21,20 @@
       ansible.builtin.debug:
         msg: "Results generated at {{ ansible_date_time.iso8601 }}"
         
-    - name: Read the JSON output file
+    - name: Check if JSON file exists
+      ansible.builtin.stat:
+        path: /runner/prc_label.json
+      register: json_file
+      
+    - name: Read the JSON output file (if it exists)
       ansible.builtin.slurp:
         src: /runner/prc_label.json
       register: prc_label_json_encoded
+      when: json_file.stat.exists
       
-    - name: Display JSON content
+    - name: Display JSON content (if file exists)
       ansible.builtin.debug:
         msg: "{{ prc_label_json_encoded.content | b64decode }}"
+      when: json_file.stat.exists
 
-
+# Made with Bob
