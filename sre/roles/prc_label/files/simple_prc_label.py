@@ -18,13 +18,20 @@ output_path = os.environ.get("PRC_OUTPUT_PATH", "/tmp/prc_label.json")
 
 # Validate the path before opening
 safe_path = os.path.normpath(output_path)
-if os.path.isabs(safe_path) and (safe_path.startswith("/tmp/") or os.access(os.path.dirname(safe_path), os.W_OK)):
+try:
+    # Create directory if it doesn't exist
+    output_dir = os.path.dirname(safe_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        
     # Save the output to a file
     with open(safe_path, "w") as f:
         json.dump(output, f, indent=4)
     
     print(f"Output saved to {output_path}")
-else:
-    print(f"Error: Invalid output path {output_path}")
+except (IOError, PermissionError) as e:
+    print(f"Error: Cannot write to output path {output_path}: {e}")
+except Exception as e:
+    print(f"Error: Unexpected error with output path {output_path}: {e}")
 
 # Made with Bob
