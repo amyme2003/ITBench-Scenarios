@@ -5,10 +5,17 @@
   gather_facts: true
   
   tasks:
-    - name: Include PRC Label role
-      include_role:
-        name: prc_label
-      tags:
-        - prc_label
+    - name: Run PRC label script directly
+      ansible.builtin.command:
+        cmd: python /runner/prc_label.py
+      register: prc_label_result
+      
+    - name: Display PRC label result
+      ansible.builtin.debug:
+        msg: "PRC label completed. Output saved to /runner/prc_label.json"
+        
+    - name: Display timestamp for the results
+      ansible.builtin.debug:
+        msg: "Results generated at {{ ansible_date_time.iso8601 }}"
 
 # Made with Bob
