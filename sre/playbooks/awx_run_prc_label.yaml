@@ -5,18 +5,14 @@
   gather_facts: false
   
   vars:
-    # This is the path in the project directory structure that will be accessible both in the container and locally
-    repo_output_path: "/runner/project/sre/roles/prc_label/files/output/prc_label_output.json"
+    # This is the path for artifacts in AWX
+    artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') | default('/tmp', true) }}/artifacts"
+    output_filename: "prc_label_output.json"
   
   tasks:
-    - name: Display paths for debugging
-      ansible.builtin.debug:
-        msg: 
-          - "Output path: {{ repo_output_path }}"
-    
-    - name: Create output directory if it doesn't exist
+    - name: Create artifacts directory if it doesn't exist
       ansible.builtin.file:
-        path: "/runner/project/sre/roles/prc_label/files/output"
+        path: "{{ artifacts_dir }}"
         state: directory
         mode: '0755'
       
@@ -107,7 +103,7 @@
       ansible.builtin.command:
         cmd: python /tmp/run_prc_label.py
       environment:
-        OUTPUT_FILE_PATH: "{{ repo_output_path }}"
+        OUTPUT_FILE_PATH: "{{ artifacts_dir }}/{{ output_filename }}"
         PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
@@ -123,7 +119,7 @@
       
     - name: Check if output file exists
       ansible.builtin.stat:
-        path: "{{ repo_output_path }}"
+        path: "{{ artifacts_dir }}/{{ output_filename }}"
       register: output_file
       
     - name: Display file status
@@ -132,7 +128,7 @@
       
     - name: Read output file if it exists
       ansible.builtin.slurp:
-        src: "{{ repo_output_path }}"
+        src: "{{ artifacts_dir }}/{{ output_filename }}"
       register: file_content
       when: output_file.stat.exists | default(false)
       
@@ -143,7 +139,7 @@
       
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: "The JSON output file has been saved to {{ repo_output_path }} and will be accessible in your local repository"
+        msg: "The JSON output file has been saved as an artifact and can be downloaded from the AWX job details page"
       when: output_file.stat.exists | default(false)
       
     - name: Clean up temporary script
