@@ -19,7 +19,7 @@
       
     - name: Set output path environment variable
       ansible.builtin.set_fact:
-        output_path: "{{ secure_temp_dir.path }}/prc_label.json"
+        output_path: "/tmp/prc_label.json"  # Fixed path for easy access
       
     - name: Run simple PRC label script
       ansible.builtin.command:
@@ -51,6 +51,11 @@
       ansible.builtin.debug:
         msg: "{{ file_content['content'] | b64decode }}"
       when: output_file.stat.exists | default(false) and file_content is succeeded
+      
+    - name: Show where to find the JSON output
+      ansible.builtin.debug:
+        msg: "The JSON output file is available at: {{ output_path }}"
+      when: output_file.stat.exists | default(false)
       
     - name: Clean up temporary directory
       ansible.builtin.file:
