@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codebase
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5.0.0
       - name: Login to Quay.io
-        uses: docker/login-action@v3.4.0
+        uses: docker/login-action@v3.5.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
@@ -46,9 +46,9 @@ jobs:
           - arm64
     steps:
       - name: Checkout codebase
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5.0.0
       - name: Login to Quay.io
-        uses: docker/login-action@v3.4.0
+        uses: docker/login-action@v3.5.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}

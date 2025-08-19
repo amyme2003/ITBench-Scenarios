@@ -17,7 +17,7 @@
   kubernetes.core.helm:
     chart_ref: kube-prometheus-stack
     chart_repo_url: https://prometheus-community.github.io/helm-charts
-    chart_version: 75.9.0
+    chart_version: 76.2.1
     kubeconfig: "{{ tools_cluster.kubeconfig }}"
     release_name: "{{ helm_release.name }}"
     release_namespace: "{{ helm_release.namespace }}"
@@ -41,6 +41,9 @@
           additionalArgs:
             - name: web.enable-otlp-receiver
               value: ""
+      defaultRules:
+        rules:
+          alertmanager: false
     wait: true
   when:
     - tools_cluster.platform == "kubernetes"
@@ -49,7 +52,7 @@
   kubernetes.core.k8s:
     kubeconfig: "{{ tools_cluster.kubeconfig }}"
     state: present
-    src: files/ocp/user-workload-monitoring-config.yaml
+    src: files/openshift/user-workload-monitoring-config.yaml
   when:
     - tools_cluster.platform == "openshift"
 
