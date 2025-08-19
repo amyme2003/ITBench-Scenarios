@@ -1,9 +1,10 @@
 """
-PRC Enrichment - pluginId- Type ENDPOINT or SERVICE
+PRC Enrichment - pluginId- Type ENDPOINT, SERVICE, or INFRASTRUCTURE
 
 This service fetches incident data with probable root causes (PRC) and enriches it
-with endpoint and service labels.
-Please note taking into account only pluginId of type Endpoint and Service
+with endpoint, service, and infrastructure labels.
+Please note taking into account pluginId of type Endpoint, Service, and Infrastructure 
+Currently the program does not work for Infrastructure pluginId:openTelemetry
 """
 
 import asyncio
@@ -23,23 +24,27 @@ from fastapi.responses import JSONResponse
 load_dotenv()
 
 # API URLs
-BASE_URL = os.environ.get("INSTANA_API_ENDPOINT", "https://release-instana.instana.rocks")
+BASE_URL = os.getenv("INSTANA_API_ENDPOINT", "https://release-instana.instana.rocks")
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
+INFRASTRUCTURE_ENTITIES_URL = f"{BASE_URL}/api/infrastructure-monitoring/analyze/entities"
 
 # Get API token from environment variable
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
 if not API_TOKEN:
     raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
 HEADERS = {
-    "Authorization": f"apiToken {API_TOKEN}",
+    "Authorization": f"Bearer {API_TOKEN}",
     "Content-Type": "application/json"
 }
 
 # Output configuration
 # Save to current working directory
-OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_label.json")
+# === Artifacts Directory Setup ===
+ARTIFACTS_DIR = os.getenv("ARTIFACTS_DIR", "./artifacts")
+os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+OUTPUT_FILE_PATH = os.path.join(ARTIFACTS_DIR, "prc_label_new.json")
 
 # Time window for metrics queries (1 hour in milliseconds)
 METRICS_WINDOW_SIZE = 3600000
@@ -159,6 +164,95 @@ async def get_endpoint_label(steady_id: str, to_timestamp: int) -> Tuple[str, st
         return f"Error Endpoint ({steady_id})", "", "Unknown Service"
 
 
+async def get_infrastructure_details(snapshot_id: str, to_timestamp: int, pluginId: str) -> Dict[str, Any]:
+    """
+    Fetch infrastructure entity details for a given snapshot ID.
+    
+    Args:
+        snapshot_id: The snapshot ID of the infrastructure entity
+        to_timestamp: The timestamp to fetch metrics at
+        pluginId: The plugin ID of the infrastructure entity
+        
+    Returns:
+        A dictionary containing infrastructure entity details
+    """
+    if not snapshot_id:
+        return {"label": "Unknown Infrastructure", "plugin": "Unknown", "time": to_timestamp}
+        
+    try:
+        # Determine the tag filter name based on the snapshot_id
+        tag_filter_name = None
+        
+        # Check the snapshot_id to determine the appropriate tag filter
+        if pluginId:
+            if "host" in pluginId:
+                tag_filter_name = "id.host"
+            elif "process" in pluginId:
+                tag_filter_name = "id.process"
+            elif "opentelemetry" in pluginId:
+                tag_filter_name = "id.otel"
+            else:
+                # If no specific pattern is matched, log a warning and use a fallback
+                logger.warning(f"Unknown pluginId pattern: {pluginId}, using default tag filter")
+                tag_filter_name = "id.host"  # Fallback only when no pattern is matched
+        else:
+            logger.warning("No pluginId provided, using default tag filter")
+            tag_filter_name = "id.host"  # Fallback when pluginId is empty
+                
+        payload = {
+            "tagFilterExpression": {
+                "type": "TAG_FILTER",
+                "name": tag_filter_name,
+                "operator": "EQUALS",
+                "entity": "NOT_APPLICABLE",
+                "value": snapshot_id
+            },
+            "timeFrame": {
+                "to": to_timestamp,
+                "windowSize": METRICS_WINDOW_SIZE
+            },
+            "pagination": {
+                "retrievalSize": 200
+            }
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(INFRASTRUCTURE_ENTITIES_URL, json=payload, headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
+            
+            items = data.get("items", [])
+            if items:
+                # Find the item with matching snapshot ID
+                for item in items:
+                    if item.get("snapshotId") == snapshot_id:
+                        return {
+                            "label": item.get("label", "Unknown Infrastructure"),
+                            "plugin": item.get("plugin", "Unknown"),
+                            "time": item.get("time", to_timestamp)
+                        }
+                
+                # If no exact match found, return the first item
+                return {
+                    "label": items[0].get("label", "Unknown Infrastructure"),
+                    "plugin": items[0].get("plugin", "Unknown"),
+                    "time": items[0].get("time", to_timestamp)
+                }
+                
+            logger.warning(f"No infrastructure details found for snapshot_id={snapshot_id}")
+            return {"label": "Unknown Infrastructure", "plugin": "Unknown", "time": to_timestamp}
+            
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error fetching infrastructure details for {snapshot_id}: {e.response.status_code}")
+        return {"label": f"Error Infrastructure ({snapshot_id})", "plugin": "Unknown", "time": to_timestamp}
+    except httpx.RequestError as e:
+        logger.error(f"Request error fetching infrastructure details for {snapshot_id}: {e}")
+        return {"label": f"Error Infrastructure ({snapshot_id})", "plugin": "Unknown", "time": to_timestamp}
+    except Exception as e:
+        logger.error(f"Error fetching infrastructure details for {snapshot_id}: {e}")
+        return {"label": f"Error Infrastructure ({snapshot_id})", "plugin": "Unknown", "time": to_timestamp}
+
+
 # === Incident Helpers ===
 
 async def fetch_incidents_data() -> List[Dict[str, Any]]:
@@ -209,8 +303,8 @@ PluginHandler = Any
 # Registry to map plugin types to their handler functions
 PLUGIN_HANDLERS: Dict[str, PluginHandler] = {
     "Endpoint": get_endpoint_label,
-    "Service": get_service_label
-    
+    "Service": get_service_label,
+    "Infrastructure": get_infrastructure_details
 }
 
 # Result processor functions for different plugin types
@@ -225,11 +319,17 @@ def process_service_result(entity: Dict[str, Any], result: Any) -> None:
     service_label = result
     entity["serviceLabel"] = service_label
 
+def process_infrastructure_result(entity: Dict[str, Any], result: Any) -> None:
+    """Process the result for Infrastructure plugin type"""
+    entity["infrastructureLabel"] = result.get("label", "Unknown Infrastructure")
+    entity["infrastructurePlugin"] = result.get("plugin", "Unknown")
+    entity["infrastructureTime"] = result.get("time", 0)
+
 # Registry to map plugin types to their result processors
 RESULT_PROCESSORS: Dict[str, Callable[[Dict[str, Any], Any], None]] = {
     "Endpoint": process_endpoint_result,
     "Service": process_service_result,
-   
+    "Infrastructure": process_infrastructure_result
 }
 
 def get_plugin_type(plugin_id: str) -> Optional[str]:
@@ -242,9 +342,13 @@ def get_plugin_type(plugin_id: str) -> Optional[str]:
     Returns:
         The plugin type if found, None otherwise
     """
-    for plugin_type in PLUGIN_HANDLERS.keys():
+    if "infrastructure" in plugin_id.lower():
+        return "Infrastructure"
+    
+    for plugin_type in ["Endpoint", "Service"]:
         if plugin_type in plugin_id:
             return plugin_type
+            
     return None
 
 async def enrich_entity_ids_with_labels(
@@ -270,37 +374,79 @@ async def enrich_entity_ids_with_labels(
     for i, cause in enumerate(current_root_cause):
         entity = cause.get("entityID", {})
         plugin_id = entity.get("pluginId", "")
-        steady_id = entity.get("steadyId")
         timestamp = cause.get("timestamp")
         
-        if not steady_id or not timestamp:
-            logger.debug(f"Missing steadyId or timestamp for cause at index {i}")
+        if not timestamp:
+            logger.debug(f"Missing timestamp for cause at index {i}")
             continue
 
-        # Skip already processed IDs
-        key = (steady_id, timestamp)
-        if key in seen_steady_ids:
-            logger.debug(f"Skipping already processed steadyId: {steady_id}")
+        # Determine plugin type
+        plugin_type = get_plugin_type(plugin_id)
+        
+        if not plugin_type:
+            logger.debug(f"Unknown plugin type for plugin_id: {plugin_id}")
             continue
             
-        seen_steady_ids.add(key)
-        
-        # Determine plugin type and get appropriate handler
-        plugin_type = get_plugin_type(plugin_id)
-        handler = PLUGIN_HANDLERS.get(plugin_type) if plugin_type else None
-        
-        # Create task if handler exists
-        if handler:
-            tasks.append(handler(steady_id, timestamp))
-            index_map.append((i, plugin_type, steady_id, timestamp))
+        # For infrastructure plugins, use snapshotId instead of steadyId
+        if plugin_type == "Infrastructure":
+            # Check if snapshotId is available in the current root cause
+            snapshot_id = None
+            for item in cause.get("explainability", []):
+                if "relevantSnapshotID" in item:
+                    snapshot_id = item.get("relevantSnapshotID")
+                    break
+                    
+            if not snapshot_id:
+                # If not found in explainability, check if it's directly in the cause
+                snapshot_id = cause.get("snapshotId")
+                
+            if not snapshot_id:
+                logger.debug(f"No snapshotId found for infrastructure plugin at index {i}")
+                continue
+                
+            # Skip already processed IDs
+            key = (snapshot_id, timestamp)
+            if key in seen_steady_ids:
+                logger.debug(f"Skipping already processed snapshotId: {snapshot_id}")
+                continue
+                
+            seen_steady_ids.add(key)
+            
+            # Create task for infrastructure entity
+            handler = PLUGIN_HANDLERS.get(plugin_type)
+            if handler:
+                tasks.append(handler(snapshot_id, timestamp, plugin_id))
+                index_map.append((i, plugin_type, snapshot_id, timestamp))
+            else:
+                logger.debug(f"No handler found for plugin_type: {plugin_type}")
         else:
-            logger.debug(f"No handler found for plugin_id: {plugin_id}")
+            # For non-infrastructure plugins, use steadyId as before
+            steady_id = entity.get("steadyId")
+            if not steady_id:
+                logger.debug(f"Missing steadyId for cause at index {i}")
+                continue
+                
+            # Skip already processed IDs
+            key = (steady_id, timestamp)
+            if key in seen_steady_ids:
+                logger.debug(f"Skipping already processed steadyId: {steady_id}")
+                continue
+                
+            seen_steady_ids.add(key)
+            
+            # Create task if handler exists
+            handler = PLUGIN_HANDLERS.get(plugin_type)
+            if handler:
+                tasks.append(handler(steady_id, timestamp))
+                index_map.append((i, plugin_type, steady_id, timestamp))
+            else:
+                logger.debug(f"No handler found for plugin_type: {plugin_type}")
 
     # Execute all tasks concurrently
     results = await asyncio.gather(*tasks) if tasks else []
 
     # Process results and update entities
-    for idx, (i, plugin_type, steady_id, _) in enumerate(index_map):
+    for idx, (i, plugin_type, id_value, _) in enumerate(index_map):
         entity = current_root_cause[i].get("entityID", {})
         result = results[idx]
         
@@ -357,7 +503,7 @@ def save_output_to_file(output: Dict[str, Any], file_path: str) -> None:
 @app.get("/prc-details")
 async def fetch_prc_details():
     """
-    Fetch and enrich PRC incident data with endpoint/service labels nested inside entityID.
+    Fetch and enrich PRC incident data with endpoint/service/infrastructure labels nested inside entityID.
     
     Returns:
         JSON response with enriched PRC data or error details
@@ -414,7 +560,7 @@ if __name__ == "__main__":
     
     # Configure uvicorn server
     uvicorn.run(
-        "prc_label:app", 
+        "prc_label_new:app", 
         host="127.0.0.1", 
         port=8004, 
         reload=True,
