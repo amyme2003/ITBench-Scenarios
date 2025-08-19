@@ -22,8 +22,13 @@
     #   when: lookup('env', 'AWX_PRIVATE_DATA_DIR') == ""
       
     - name: Create artifacts directory if it doesn't exist
-
-# Made with Bob
+      ansible.builtin.file:
+        path: "{{ artifacts_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Copy prc_label.py to artifacts directory
+      ansible.builtin.copy:
         src: "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
         dest: "{{ artifacts_dir }}/prc_label.py"
         mode: '0644'
@@ -117,9 +122,9 @@
       environment:
         OUTPUT_FILE_PATH: "{{ output_path }}"
         PYTHONPATH: "{{ artifacts_dir }}:{{ ansible_env.PYTHONPATH | default('') }}"
-        # Pass through the Instana API token and endpoint from the execution environment
-        INSTANA_API_TOKEN: "{{ lookup('env', 'INSTANA_API_TOKEN') }}"
-        INSTANA_API_ENDPOINT: "{{ lookup('env', 'INSTANA_API_ENDPOINT') | default('https://release-instana.instana.rocks') }}"
+        # Pass through the Instana API token and endpoint from the variables
+        INSTANA_API_TOKEN: "{{ instana_api_token }}"
+        INSTANA_API_ENDPOINT: "{{ instana_api_endpoint }}"
       register: prc_label_result
       ignore_errors: true
       
@@ -169,4 +174,4 @@
         path: "{{ artifacts_dir }}/run_prc_label.py"
         state: absent
 
-# Made with Bob
+
