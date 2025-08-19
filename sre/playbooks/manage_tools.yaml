@@ -2,6 +2,11 @@
 - name: Manage SRE and FinOps Incident Environment Tool Stack
   hosts:
     - environment
+  vars:
+    cluster:
+      kubeconfig: ~/.kube/config
+    cluster_provider: "kind"
+    cluster_platform: "kubernetes"
   pre_tasks:
     - name: Import system role
       ansible.builtin.import_role:
@@ -68,7 +73,7 @@
       vars:
         tools_cluster:
           provider: "{{ cluster_provider }}"
-          kubeconfig: ""
+          kubeconfig: "{{ cluster.kubeconfig }}"
           platform: "{{ cluster_platform }}"
 
     # - name: Import e2e role
