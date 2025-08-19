@@ -117,6 +117,9 @@
       environment:
         OUTPUT_FILE_PATH: "{{ output_path }}"
         PYTHONPATH: "{{ artifacts_dir }}:{{ ansible_env.PYTHONPATH | default('') }}"
+        # Pass through the Instana API token and endpoint from the execution environment
+        INSTANA_API_TOKEN: "{{ lookup('env', 'INSTANA_API_TOKEN') }}"
+        INSTANA_API_ENDPOINT: "{{ lookup('env', 'INSTANA_API_ENDPOINT') | default('https://release-instana.instana.rocks') }}"
       register: prc_label_result
       ignore_errors: true
       
@@ -166,4 +169,4 @@
         path: "{{ artifacts_dir }}/run_prc_label.py"
         state: absent
 
-
+# Made with Bob
