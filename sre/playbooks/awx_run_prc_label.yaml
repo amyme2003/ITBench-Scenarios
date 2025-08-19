@@ -6,16 +6,27 @@
   
   vars:
     # This is the path for artifacts in AWX
-    artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') | default('/tmp', true) }}/artifacts"
+    artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') }}/artifacts"
     output_filename: "prc_label_output.json"
     output_path: "{{ artifacts_dir }}/{{ output_filename }}"
   
   tasks:
+    - name: Verify AWX_PRIVATE_DATA_DIR is set
+      ansible.builtin.fail:
+        msg: "AWX_PRIVATE_DATA_DIR environment variable is not set. This playbook must be run in AWX."
+      when: lookup('env', 'AWX_PRIVATE_DATA_DIR') == ""
+      
     - name: Create artifacts directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ artifacts_dir }}"
         state: directory
         mode: '0755'
+    
+    - name: Copy prc_label.py to artifacts directory
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
+        dest: "{{ artifacts_dir }}/prc_label.py"
+        mode: '0644'
       
     - name: Create a simple CLI wrapper for prc_label.py
       ansible.builtin.copy:
@@ -27,8 +38,8 @@
           import sys
           import traceback
           
-          # Add the runner directory to the path
-          sys.path.append('/runner')
+          # Add the artifacts directory to the path
+          sys.path.append(os.path.dirname(os.path.abspath(__file__)))
           
           try:
               from prc_label import fetch_incidents_data, filter_prc_incidents, process_incident
@@ -97,15 +108,15 @@
           
           if __name__ == "__main__":
               sys.exit(asyncio.run(main()))
-        dest: /tmp/run_prc_label.py
+        dest: "{{ artifacts_dir }}/run_prc_label.py"
         mode: '0700'
       
     - name: Run PRC label script from execution environment
       ansible.builtin.command:
-        cmd: python /tmp/run_prc_label.py
+        cmd: python "{{ artifacts_dir }}/run_prc_label.py"
       environment:
         OUTPUT_FILE_PATH: "{{ output_path }}"
-        PYTHONPATH: "/runner:{{ ansible_env.PYTHONPATH | default('') }}"
+        PYTHONPATH: "{{ artifacts_dir }}:{{ ansible_env.PYTHONPATH | default('') }}"
       register: prc_label_result
       ignore_errors: true
       
@@ -152,7 +163,7 @@
       
     - name: Clean up temporary script
       ansible.builtin.file:
-        path: /tmp/run_prc_label.py
+        path: "{{ artifacts_dir }}/run_prc_label.py"
         state: absent
 
-# Made with Bob
+
