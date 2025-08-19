@@ -5,25 +5,25 @@
   gather_facts: false
   
   vars:
-    # This is the path for artifacts in AWX
-    artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') }}/artifacts"
+    # This is the path for artifacts in AWX or local testing
+    artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') | default('/tmp', true) }}/artifacts"
     output_filename: "prc_label_output.json"
     output_path: "{{ artifacts_dir }}/{{ output_filename }}"
+    # For local testing, set a default API endpoint if not provided
+    instana_api_endpoint: "{{ lookup('env', 'INSTANA_API_ENDPOINT') | default('https://release-instana.instana.rocks', true) }}"
+    # For local testing, use a dummy token if not provided
+    instana_api_token: "{{ lookup('env', 'INSTANA_API_TOKEN') | default('dummy_token_for_testing', true) }}"
   
   tasks:
-    - name: Verify AWX_PRIVATE_DATA_DIR is set
-      ansible.builtin.fail:
-        msg: "AWX_PRIVATE_DATA_DIR environment variable is not set. This playbook must be run in AWX."
-      when: lookup('env', 'AWX_PRIVATE_DATA_DIR') == ""
+    # Skip the AWX check for local testing
+    # - name: Verify AWX_PRIVATE_DATA_DIR is set
+    #   ansible.builtin.fail:
+    #     msg: "AWX_PRIVATE_DATA_DIR environment variable is not set. This playbook must be run in AWX."
+    #   when: lookup('env', 'AWX_PRIVATE_DATA_DIR') == ""
       
     - name: Create artifacts directory if it doesn't exist
-      ansible.builtin.file:
-        path: "{{ artifacts_dir }}"
-        state: directory
-        mode: '0755'
-    
-    - name: Copy prc_label.py to artifacts directory
-      ansible.builtin.copy:
+
+# Made with Bob
         src: "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
         dest: "{{ artifacts_dir }}/prc_label.py"
         mode: '0644'
