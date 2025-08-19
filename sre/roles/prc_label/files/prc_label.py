@@ -23,7 +23,7 @@ from fastapi.responses import JSONResponse
 load_dotenv()
 
 # API URLs
-BASE_URL = "https://release-instana.instana.rocks"
+BASE_URL = os.environ.get("INSTANA_API_ENDPOINT", "https://release-instana.instana.rocks")
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
