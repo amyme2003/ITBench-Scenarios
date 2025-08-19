@@ -68,7 +68,7 @@
       vars:
         tools_cluster:
           provider: "{{ cluster_provider }}"
-          kubeconfig: "{{ cluster.kubeconfig }}"
+          kubeconfig: " "
           platform: "{{ cluster_platform }}"
 
     # - name: Import e2e role
