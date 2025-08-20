@@ -8,22 +8,41 @@
     # This is the path for artifacts in AWX or local testing
     artifacts_dir: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') | default('/tmp', true) }}/artifacts"
     output_filename: "prc_label_output.json"
-    output_path: "{{ artifacts_dir }}/{{ output_filename }}"
+    output_path: "{{ artifacts_dir }}/output/{{ output_filename }}"
     # For local testing, set a default API endpoint if not provided
     instana_api_endpoint: "{{ lookup('env', 'INSTANA_API_ENDPOINT') | default('https://release-instana.instana.rocks', true) }}"
-    # For local testing, use a dummy token if not provided
-    instana_api_token: "{{ lookup('env', 'INSTANA_API_TOKEN') | default('dummy_token_for_testing', true) }}"
+    # For API token, don't set a default - require it to be provided
+    instana_api_token: "{{ lookup('env', 'INSTANA_API_TOKEN') | default('', true) }}"
   
   tasks:
-    # Skip the AWX check for local testing
-    # - name: Verify AWX_PRIVATE_DATA_DIR is set
-    #   ansible.builtin.fail:
-    #     msg: "AWX_PRIVATE_DATA_DIR environment variable is not set. This playbook must be run in AWX."
-    #   when: lookup('env', 'AWX_PRIVATE_DATA_DIR') == ""
+    - name: Check if running in AWX
+      ansible.builtin.set_fact:
+        running_in_awx: "{{ lookup('env', 'AWX_PRIVATE_DATA_DIR') != '' }}"
+    
+    - name: Debug environment variables
+      ansible.builtin.debug:
+        msg: 
+          - "API Endpoint: {{ instana_api_endpoint }}"
+          - "API Token (first 5 chars): {{ instana_api_token[:5] }}***"
+          - "Running in AWX: {{ running_in_awx }}"
+          - "Artifacts directory: {{ artifacts_dir }}"
+      
+    - name: Check if API token is provided
+      ansible.builtin.fail:
+        msg: >
+          INSTANA_API_TOKEN environment variable is not set. 
+          Please set a valid API token in AWX or in your environment.
+      when: instana_api_token == ""
       
     - name: Create artifacts directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ artifacts_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Create output directory if it doesn't exist
+      ansible.builtin.file:
+        path: "{{ artifacts_dir }}/output"
         state: directory
         mode: '0755'
     
@@ -32,87 +51,77 @@
         src: "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
         dest: "{{ artifacts_dir }}/prc_label.py"
         mode: '0644'
-      
-    - name: Create a simple CLI wrapper for prc_label.py
+    
+    - name: Create a diagnostic script
       ansible.builtin.copy:
         content: |
           #!/usr/bin/env python3
-          import asyncio
-          import json
           import os
           import sys
-          import traceback
           
-          # Add the artifacts directory to the path
-          sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+          print("=== Environment Variables ===")
+          print(f"INSTANA_API_TOKEN exists: {'Yes' if 'INSTANA_API_TOKEN' in os.environ else 'No'}")
+          if 'INSTANA_API_TOKEN' in os.environ:
+              token = os.environ['INSTANA_API_TOKEN']
+              print(f"Token length: {len(token)}")
+              print(f"Token first 5 chars: {token[:5]}***")
           
+          print(f"INSTANA_API_ENDPOINT exists: {'Yes' if 'INSTANA_API_ENDPOINT' in os.environ else 'No'}")
+          if 'INSTANA_API_ENDPOINT' in os.environ:
+              print(f"API Endpoint: {os.environ['INSTANA_API_ENDPOINT']}")
+          
+          print("\n=== Testing API Connection ===")
           try:
-              from prc_label import fetch_incidents_data, filter_prc_incidents, process_incident
-          except ImportError as e:
-              print(f"Error importing from prc_label.py: {e}")
-              sys.exit(1)
-          
-          async def main():
-              output_path = os.environ.get("OUTPUT_FILE_PATH")
-              if not output_path:
-                  print("ERROR: OUTPUT_FILE_PATH environment variable is not set")
-                  return 1
-                  
-              print(f"Output will be saved to: {output_path}")
+              import httpx
               
-              try:
-                  print("Fetching incidents data...")
-                  incidents_data = await fetch_incidents_data()
-                  print(f"Fetched {len(incidents_data)} incidents")
-                  
-                  print("Filtering PRC incidents...")
-                  prc_incidents = filter_prc_incidents(incidents_data)
-                  print(f"Found {len(prc_incidents)} PRC incidents")
-                  
-                  print("Processing incidents...")
-                  output = {}
-                  
-                  # Process each incident one by one (limit to 2 for demonstration)
-                  count = 0
-                  for i, incident in enumerate(prc_incidents):
-                      if count >= 2:  # Only process 2 incidents for demo
-                          break
-                      try:
-                          print(f"Processing incident {i+1}/{len(prc_incidents)}")
-                          key, entry = await process_incident(incident)
-                          output[key] = entry
-                          count += 1
-                      except Exception as e:
-                          print(f"Error processing incident {i+1}: {e}")
-                          traceback.print_exc()
-                  
-                  # Create directory if it doesn't exist
-                  output_dir = os.path.dirname(output_path)
-                  if output_dir:
-                      print(f"Creating directory: {output_dir}")
-                      os.makedirs(output_dir, exist_ok=True)
-                  
-                  # Save to file
-                  print(f"Writing output to file: {output_path}")
-                  with open(output_path, "w") as f:
-                      json.dump(output, f, indent=4)
-                  
-                  # Verify file was written
-                  if os.path.exists(output_path):
-                      print(f"File successfully written: {output_path}")
-                      file_size = os.path.getsize(output_path)
-                      print(f"File size: {file_size} bytes")
-                  else:
-                      print(f"ERROR: File was not created: {output_path}")
-                  
-                  return 0
-              except Exception as e:
-                  print(f"Error: {e}", file=sys.stderr)
-                  traceback.print_exc()
-                  return 1
+              headers = {}
+              if 'INSTANA_API_TOKEN' in os.environ:
+                  headers["Authorization"] = f"Bearer {os.environ['INSTANA_API_TOKEN']}"
+              
+              endpoint = os.environ.get('INSTANA_API_ENDPOINT', 'https://release-instana.instana.rocks')
+              url = f"{endpoint}/api/events?eventTypeFilters=INCIDENT"
+              
+              print(f"Making test request to: {url}")
+              print(f"Using Authorization header: {'Yes' if 'Authorization' in headers else 'No'}")
+              
+              response = httpx.get(url, headers=headers)
+              print(f"Response status code: {response.status_code}")
+              print(f"Response headers: {response.headers}")
+              
+              if response.status_code == 401:
+                  print("\nERROR: Authentication failed (401 Unauthorized)")
+                  print("This means your API token is invalid, expired, or doesn't have the right permissions.")
+              elif response.status_code == 200:
+                  print("\nSUCCESS: API connection successful!")
+                  data = response.json()
+                  print(f"Received {len(data)} incidents")
+              else:
+                  print(f"\nERROR: Unexpected status code: {response.status_code}")
+                  print(f"Response text: {response.text[:500]}")
           
-          if __name__ == "__main__":
-              sys.exit(asyncio.run(main()))
+          except Exception as e:
+              print(f"Error testing API connection: {e}")
+          
+          sys.exit(0)
+        dest: "{{ artifacts_dir }}/test_api.py"
+        mode: '0700'
+      
+    - name: Run diagnostic script
+      ansible.builtin.command:
+        cmd: python "{{ artifacts_dir }}/test_api.py"
+      environment:
+        INSTANA_API_TOKEN: "{{ instana_api_token }}"
+        INSTANA_API_ENDPOINT: "{{ instana_api_endpoint }}"
+      register: diagnostic_result
+      ignore_errors: true
+      
+    - name: Display diagnostic output
+      ansible.builtin.debug:
+        msg: "{{ diagnostic_result.stdout_lines }}"
+      
+    - name: Copy run_prc_label.py to artifacts directory
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../roles/prc_label/files/run_prc_label.py"
         dest: "{{ artifacts_dir }}/run_prc_label.py"
         mode: '0700'
       
@@ -166,12 +175,19 @@
       
     - name: Show where to find the JSON output
       ansible.builtin.debug:
-        msg: "The JSON output file has been attached as an artifact and can be viewed in the AWX job details page under Artifacts → JSON"
+        msg: >
+          The JSON output file has been attached as an artifact and can be viewed 
+          in the AWX job details page under Artifacts → JSON
       when: output_file.stat.exists | default(false)
       
-    - name: Clean up temporary script
+    - name: Clean up temporary scripts
       ansible.builtin.file:
-        path: "{{ artifacts_dir }}/run_prc_label.py"
+        path: "{{ item }}"
         state: absent
+      with_items:
+        - "{{ artifacts_dir }}/run_prc_label.py"
+        - "{{ artifacts_dir }}/prc_label.py"
+        - "{{ artifacts_dir }}/test_api.py"
+      when: prc_label_result is succeeded
 
-
+# Made with Bob
