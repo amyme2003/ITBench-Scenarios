@@ -4,9 +4,7 @@
     - environment
   gather_facts: true
   
-  vars:
-    cluster:
-      kubeconfig: ~/.kube/config
+
   
   pre_tasks:
 
