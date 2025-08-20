@@ -4,7 +4,6 @@
     - environment
   gather_facts: true
   
-
   
   pre_tasks:
 
@@ -16,12 +15,7 @@
         success_msg: "All required variables are defined"
       tags:
         - always
-        
-    - name: Display warning about sensitive information
-      ansible.builtin.debug:
-        msg: "WARNING: This playbook uses sensitive API tokens. Ensure they are provided securely via AWX credentials or encrypted vault files."
-      tags:
-        - always
+
   
   tasks:
     - name: Import PRC role

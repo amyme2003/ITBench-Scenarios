@@ -11,4 +11,4 @@ argument_specs:
         required: true
         description: Instana API token for authentication
 
-# Made with Bob
+

@@ -4,4 +4,4 @@
 # Note: instana_api_token should be provided securely via AWX credentials
 # or through encrypted vault files, not in defaults
 
-# Made with Bob
+
