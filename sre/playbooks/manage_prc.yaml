@@ -2,17 +2,13 @@
 - name: Manage PRC Data Collection from Instana
   hosts:
     - environment
-  gather_facts: false
+  gather_facts: true
+  
+  vars:
+    cluster:
+      kubeconfig: ~/.kube/config
   
   pre_tasks:
-    - name: Import system role
-      ansible.builtin.import_role:
-        name: ../roles/system
-      tags:
-        - always
-      vars:
-        system_cluster:
-          kubeconfig: "{{ cluster.kubeconfig }}"
 
     - name: Validate required variables
       ansible.builtin.assert:
