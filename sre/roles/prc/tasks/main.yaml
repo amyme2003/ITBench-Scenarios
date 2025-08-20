@@ -79,10 +79,14 @@
   ansible.builtin.set_fact:
     prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {} }}"
 
+- name: Debug PRC data (pretty print)
+  debug:
+    msg: "{{ prc_data | to_nice_json }}"
+
 - name: Set job artifact
   ansible.builtin.set_stats:
     data:
-      prc_data_json: "{{ prc_data | to_nice_json }}"
+      prc_data: "{{ prc_data }}"
     per_host: false
 
-# Made with Bob
+
