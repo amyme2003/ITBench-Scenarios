@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 import signal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple, Set
 from dotenv import load_dotenv
 
 import httpx
@@ -44,7 +44,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-# === Simplified Incident Fetcher ===
+# === Incident Fetcher ===
 
 async def fetch_incidents_data() -> List[Dict[str, Any]]:
     """Fetch incident data from the Instana API with a timeout."""
@@ -87,6 +87,23 @@ def save_output_to_file(output: Dict[str, Any], file_path: str) -> None:
     except Exception as e:
         print(f"Failed to save output: {e}")
 
+async def process_incident(incident: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    """Process an incident to create the enriched entry."""
+    trigger_id = incident.get("eventId", "")
+    trigger_label = incident.get("entityLabel", "Unknown")
+    prc = incident.get("probableCause", {})
+    
+    # Create the enriched entry
+    entry = {
+        "entityType": incident.get("entityType", ""),
+        "problem": incident.get("problem", ""),
+        "detail": incident.get("detail", ""),
+        "probableCause": prc
+    }
+
+    key = f"Triggering Event ID: {trigger_id} | Triggering Entity Label: {trigger_label}"
+    return key, entry
+
 async def main():
     """Main function to fetch and process incidents."""
     print("Fetching incidents from Instana...")
@@ -96,19 +113,15 @@ async def main():
     prc_incidents = filter_prc_incidents(incidents_data)
     print(f"Found {len(prc_incidents)} PRC incidents")
     
-    # Create a simplified output with just the essential information
+    # Process all incidents concurrently
+    results = await asyncio.gather(
+        *[process_incident(incident) for incident in prc_incidents]
+    )
+    
+    # Build output dictionary
     output = {}
-    for incident in prc_incidents:
-        key = f"Incident {incident.get('eventId', 'Unknown')}"
-        output[key] = {
-            "entityType": incident.get("entityType", ""),
-            "problem": incident.get("problem", ""),
-            "detail": incident.get("detail", ""),
-            "probableCause": {
-                "found": incident.get("probableCause", {}).get("found", False),
-                "rootCauseId": incident.get("probableCause", {}).get("rootCauseId", "")
-            }
-        }
+    for key, entry in results:
+        output[key] = entry
     
     save_output_to_file(output, OUTPUT_FILE_PATH)
     return output
@@ -116,12 +129,12 @@ async def main():
 if __name__ == "__main__":
     # Set a timeout handler
     def timeout_handler(signum, frame):
-        print("Execution timed out after 60 seconds")
+        print("Execution timed out after 120 seconds")
         sys.exit(1)
     
-    # Set a 1-minute timeout
+    # Set a 2-minute timeout
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(60)
+    signal.alarm(120)
     
     try:
         asyncio.run(main())
@@ -133,4 +146,4 @@ if __name__ == "__main__":
         # Cancel the timeout
         signal.alarm(0)
 
-
+# Made with Bob
