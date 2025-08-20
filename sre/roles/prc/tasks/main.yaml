@@ -1,0 +1,67 @@
+---
+# Tasks for PRC role
+
+- name: Install Python dependencies
+  ansible.builtin.pip:
+    requirements: "{{ role_path }}/files/requirements.txt"
+    state: present
+  delegate_to: localhost
+
+- name: Set environment variable for Instana API token
+  ansible.builtin.set_fact:
+    instana_env:
+      INSTANA_API_TOKEN: "{{ instana_api_token }}"
+
+- name: Create a modified version of the PRC script for CLI execution
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/prc_label_new.py"
+    dest: "{{ role_path }}/files/prc_cli_runner.py"
+    mode: '0755'
+  delegate_to: localhost
+
+- name: Add CLI execution code to the script
+  ansible.builtin.blockinfile:
+    path: "{{ role_path }}/files/prc_cli_runner.py"
+    block: |
+      # CLI execution code
+      if __name__ == "__main__":
+          import asyncio
+          
+          # Run the fetch_prc_details function directly
+          output = asyncio.run(fetch_prc_details())
+          print("PRC data fetched successfully")
+    insertafter: "# === Main Entry Point ==="
+  delegate_to: localhost
+
+- name: Run PRC script to fetch data from Instana
+  ansible.builtin.command:
+    cmd: python3 {{ role_path }}/files/prc_cli_runner.py
+  environment: "{{ instana_env }}"
+  register: prc_output
+  changed_when: false
+  delegate_to: localhost
+
+- name: Check if output JSON file exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/prc_label_new.json"
+  register: prc_json_file
+  delegate_to: localhost
+
+- name: Read PRC JSON output
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/prc_label_new.json"
+  register: prc_json_content
+  when: prc_json_file.stat.exists
+  delegate_to: localhost
+
+- name: Set PRC data as fact
+  ansible.builtin.set_fact:
+    prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {} }}"
+
+- name: Set job artifact
+  ansible.builtin.set_stats:
+    data:
+      prc_data_json: "{{ prc_data | to_nice_json }}"
+    per_host: false
+
+
