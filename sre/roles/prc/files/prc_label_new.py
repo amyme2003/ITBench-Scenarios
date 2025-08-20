@@ -342,9 +342,12 @@ def get_plugin_type(plugin_id: str) -> Optional[str]:
     if "infrastructure" in plugin_id.lower():
         return "Infrastructure"
     
-    for plugin_type in ["Endpoint", "Service"]:
-        if plugin_type in plugin_id:
-            return plugin_type
+    # Case-insensitive check for endpoint and service
+    plugin_id_lower = plugin_id.lower()
+    if "endpoint" in plugin_id_lower:
+        return "Endpoint"
+    elif "service" in plugin_id_lower:
+        return "Service"
             
     return None
 
