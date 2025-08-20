@@ -13,7 +13,7 @@
 
     - name: Import system role
       ansible.builtin.import_role:
-        name: system
+        name: ../roles/system
       tags:
         - always
       vars:
@@ -22,7 +22,7 @@
 
     - name: Import cluster role
       ansible.builtin.import_role:
-        name: cluster
+        name: ../roles/cluster
       tags:
         - always
       vars:
@@ -33,7 +33,7 @@
 
     - name: Import variables for incident
       ansible.builtin.import_role:
-        name: incidents
+        name: ../roles/incidents
       tags:
         - always
       vars:
@@ -50,7 +50,7 @@
 
     # - name: Import e2e role
     #   ansible.builtin.import_role:
-    #     name: e2e
+    #     name: ../roles/e2e
     #     tasks_from: record_topology_information
     #   tags:
     #     - pre_fault_removal
@@ -59,7 +59,7 @@
 
     - name: Import faults role
       ansible.builtin.import_role:
-        name: faults
+        name: ../roles/faults
       vars:
         faults_cluster:
           kubeconfig: "{{ cluster.kubeconfig }}"
@@ -67,7 +67,7 @@
 
     # - name: Import e2e role
     #   ansible.builtin.import_role:
-    #     name: e2e
+    #     name: ../roles/e2e
     #     tasks_from: record_topology_information
     #   tags:
     #     - post_fault_injection
@@ -76,7 +76,7 @@
 
     # - name: Import e2e role
     #   ansible.builtin.import_role:
-    #     name: e2e
+    #     name: ../roles/e2e
     #     tasks_from: register_fault_injection_time
     #   tags:
     #     - inject_faults
