@@ -20,8 +20,5 @@ spec:
       category: sre
       selected:
         - kubernetes-topology-monitor
-  faults:
-    - otel_demo:
-        flags:
-          - name: loadGeneratorFloodHomepage
-            state: "on"
+  faults: []
+
