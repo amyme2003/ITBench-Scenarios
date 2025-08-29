@@ -10,12 +10,7 @@
         success_msg: incident_id is defined.
       tags:
         - always
-    - name: Set cluster kubeconfig from AWX credential
-      set_fact:
-        cluster:
-          kubeconfig: "{{ lookup('env', 'K8S_AUTH_KUBECONFIG') }}"
-      tags:
-        - always
+
     - name: Import system role
       ansible.builtin.import_role:
         name: ../roles/system
