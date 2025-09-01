@@ -15,7 +15,7 @@
 
 - name: Create a modified version of the PRC script for CLI execution
   ansible.builtin.copy:
-    src: "{{ role_path }}/files/prc_timeout.py"
+    src: "{{ role_path }}/files/prc_timeout_v3.py"
     dest: "{{ role_path }}/files/prc_cli_runner.py"
     mode: '0755'
 
@@ -33,11 +33,12 @@
 
 - name: Create symbolic links for compatibility
   ansible.builtin.file:
-    src: "{{ role_path }}/files/prc_label_new.py"
+    src: "{{ role_path }}/files/prc_label_v3.py"
     dest: "{{ item }}"
     state: link
   loop:
     - "{{ role_path }}/files/prc_label.py"
+    - "{{ role_path }}/files/prc_label_new.py"
     - "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
   ignore_errors: true
 
@@ -60,12 +61,12 @@
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
-    path: "{{ role_path }}/files/prc_label_new.json"
+    path: "{{ role_path }}/files/prc_label_v3.json"
   register: prc_json_file
 
 - name: Read PRC JSON output
   ansible.builtin.slurp:
-    src: "{{ role_path }}/files/prc_label_new.json"
+    src: "{{ role_path }}/files/prc_label_v3.json"
   register: prc_json_content
   when: prc_json_file.stat.exists
 
