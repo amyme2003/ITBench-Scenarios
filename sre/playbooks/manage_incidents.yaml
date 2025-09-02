@@ -10,6 +10,9 @@
         success_msg: incident_id is defined.
       tags:
         - always
+    - name: Show injected kubeconfig
+      debug:
+        var: BACKUP_KUBECONFIG
 
     - name: Import system role
       ansible.builtin.import_role:
