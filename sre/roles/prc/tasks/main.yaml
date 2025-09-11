@@ -1,0 +1,90 @@
+---
+# Tasks for PRC role
+
+- name: Install Python dependencies
+  ansible.builtin.pip:
+    requirements: "{{ role_path }}/files/requirements.txt"
+    state: present
+  tags:
+    - setup
+
+- name: Set environment variable for Instana API token
+  ansible.builtin.set_fact:
+    instana_env:
+      INSTANA_API_TOKEN: "{{ instana_api_token }}"
+
+- name: Create a modified version of the PRC script for CLI execution
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/prc_timeout.py"
+    dest: "{{ role_path }}/files/prc_cli_runner.py"
+    mode: '0755'
+
+- name: Create directory for compatibility
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/../roles/prc_label/files"
+    state: directory
+    mode: '0755'
+
+- name: Copy requirements.txt to compatibility directory
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/requirements.txt"
+    dest: "{{ playbook_dir }}/../roles/prc_label/files/requirements.txt"
+    mode: '0644'
+
+- name: Create symbolic links for compatibility
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/prc_label_new.py"
+    dest: "{{ item }}"
+    state: link
+  loop:
+    - "{{ role_path }}/files/prc_label.py"
+    - "{{ playbook_dir }}/../roles/prc_label/files/prc_label.py"
+  ignore_errors: true
+
+# CLI execution code is already included in the prc_timeout.py script
+
+- name: Run PRC script to fetch data from Instana
+  ansible.builtin.command:
+    cmd: python3 {{ role_path }}/files/prc_cli_runner.py
+  environment: "{{ instana_env }}"
+  register: prc_output
+  changed_when: false
+  async: 300
+  poll: 10
+
+- name: Create artifacts directory
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/../artifacts"
+    state: directory
+    mode: '0755'
+
+- name: Check if output JSON file exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/prc_label_new.json"
+  register: prc_json_file
+
+- name: Read PRC JSON output
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/prc_label_new.json"
+  register: prc_json_content
+  when: prc_json_file.stat.exists
+
+- name: Copy JSON output to artifacts directory
+  ansible.builtin.copy:
+    content: "{{ prc_json_content.content | b64decode if prc_json_file.stat.exists else '{}' }}"
+    dest: "{{ playbook_dir }}/../artifacts/prc_data.json"
+  when: prc_json_file.stat.exists
+
+- name: Set PRC data as fact
+  ansible.builtin.set_fact:
+    prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {} }}"
+
+- name: Debug PRC data (pretty print)
+  debug:
+    msg: "{{ prc_data | to_nice_json }}"
+
+- name: Set job artifact
+  ansible.builtin.set_stats:
+    data:
+      prc_data: "{{ prc_data }}"
+    per_host: false
