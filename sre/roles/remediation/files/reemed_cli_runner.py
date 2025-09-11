@@ -30,6 +30,7 @@ from pathlib import Path
 
 
 
+
 # Get the absolute path to the .env file
 base_dir = Path(__file__).resolve().parent
 env_path = os.path.join(base_dir, '.env')
@@ -93,8 +94,8 @@ async def fetch_incidents() -> List[Dict[str, Any]]:
         return data
 
 
-def filter_prc_incidents(incidents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Keep only open PRC incidents."""
+def filter_prc_incidents(incidents: List[Dict[str, Any]], max_incidents=3) -> List[Dict[str, Any]]:
+    """Keep only open PRC incidents, limited to max_incidents."""
     seen_ids = set()
     prc_incidents = []
     for inc in incidents:
@@ -107,8 +108,10 @@ def filter_prc_incidents(incidents: List[Dict[str, Any]]) -> List[Dict[str, Any]
             if eid not in seen_ids:
                 seen_ids.add(eid)
                 prc_incidents.append(inc)
+                if len(prc_incidents) >= max_incidents:
+                    break
 
-    logger.info(f"Filtered to {len(prc_incidents)} PRC incidents")
+    logger.info(f"Filtered to {len(prc_incidents)} PRC incidents (limited to {max_incidents})")
     return prc_incidents
 
 
@@ -310,6 +313,11 @@ async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
         probable_cause = incident.get("probableCause", {})
         current_root_causes = probable_cause.get("currentRootCause", [])
 
+        # Limit the number of root causes to process (max 3)
+        if len(current_root_causes) > 3:
+            logger.info(f"Limiting root causes from {len(current_root_causes)} to 3")
+            current_root_causes = current_root_causes[:3]
+
         additional_responses = []
 
         for root_cause in current_root_causes:
@@ -421,16 +429,32 @@ def save_results(results: List[Dict[str, Any]]) -> None:
 # === Main Runner ===
 
 async def main():
-    incidents = await fetch_incidents()
-    prc_incidents = filter_prc_incidents(incidents)
+    try:
+        # Create an empty file at the start to ensure we have something to return
+        with open(OUTPUT_FILE_PATH, "w") as f:
+            json.dump({"status": "processing"}, f)
+            
+        incidents = await fetch_incidents()
+        # Limit to max 3 incidents to process
+        prc_incidents = filter_prc_incidents(incidents, max_incidents=3)
+        
+        if not prc_incidents:
+            logger.info("No PRC incidents found")
+            save_results([{"status": "success", "message": "No PRC incidents found"}])
+            return []
 
-    results = []
-    for inc in prc_incidents:
-        res = await trigger_remediation(inc)
-        results.append(res)
-
-    save_results(results)
-    return results
+        # Process incidents concurrently instead of sequentially
+        tasks = [trigger_remediation(inc) for inc in prc_incidents]
+        results = await asyncio.gather(*tasks)
+        
+        save_results(results)
+        return results
+    except Exception as e:
+        logger.error(f"Error in main function: {str(e)}")
+        # Save error to output file
+        with open(OUTPUT_FILE_PATH, "w") as f:
+            json.dump({"status": "error", "message": str(e)}, f)
+        return []
 
 
 # === API Endpoints ===
@@ -488,18 +512,18 @@ if __name__ == "__main__":
     
     # Set a timeout handler
     def timeout_handler(signum, frame):
-        logger.error("Execution timed out after 600 seconds")
+        logger.error("Execution timed out after 240 seconds")
         # Save any partial results before exiting
         try:
             with open(OUTPUT_FILE_PATH, "w") as f:
-                json.dump({"error": "Execution timed out"}, f)
+                json.dump({"status": "timeout", "message": "Execution timed out after 240 seconds"}, f)
         except Exception as e:
             logger.error(f"Failed to save timeout error: {e}")
         sys.exit(1)
     
-    # Set a 10-minute timeout (600 seconds)
+    # Set a 4-minute timeout (240 seconds)
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)
+    signal.alarm(240)
     
     try:
         # Check if the script is being run with the /trigger argument
@@ -521,9 +545,15 @@ if __name__ == "__main__":
             )
     except Exception as e:
         logger.error(f"Error: {e}")
+        # Save error to output file
+        try:
+            with open(OUTPUT_FILE_PATH, "w") as f:
+                json.dump({"status": "error", "message": str(e)}, f)
+        except Exception as write_err:
+            logger.error(f"Failed to save error: {write_err}")
         sys.exit(1)
     finally:
         # Cancel the timeout
         signal.alarm(0)
 
-
+# Made with Bob
