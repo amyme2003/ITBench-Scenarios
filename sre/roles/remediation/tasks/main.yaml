@@ -30,15 +30,20 @@
     path: "{{ role_path }}/files/reemed_cli_runner.py"
     mode: '0755'
 
+- name: Create empty JSON file as placeholder
+  ansible.builtin.copy:
+    content: '{"status": "processing", "message": "Remediation job started"}'
+    dest: "{{ role_path }}/files/Remed_prc.json"
+    mode: '0644'
+
 - name: Run Remediation script to fetch data and trigger remediation
   ansible.builtin.command:
     cmd: python3 {{ role_path }}/files/reemed_cli_runner.py /trigger
   environment: "{{ instana_env }}"
   register: remediation_output
   changed_when: false
-  # Increase timeout to 900 seconds (15 minutes)
-  async: 900
-  poll: 30
+  async: 300
+  poll: 10
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
@@ -68,4 +73,4 @@
     per_host: false
   when: remediation_json_file.stat.exists
 
-
+# Made with Bob
