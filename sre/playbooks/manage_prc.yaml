@@ -1,0 +1,25 @@
+---
+- name: Manage PRC Data Collection from Instana
+  hosts:
+    - environment
+  gather_facts: true
+  
+  
+  pre_tasks:
+
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - instana_api_token is defined
+        fail_msg: "instana_api_token is required. This should be provided securely via AWX credentials."
+        success_msg: "All required variables are defined"
+      tags:
+        - always
+
+  
+  tasks:
+    - name: Import PRC role
+      ansible.builtin.import_role:
+        name: ../roles/prc
+      vars:
+        instana_api_token: "{{ instana_api_token }}"
