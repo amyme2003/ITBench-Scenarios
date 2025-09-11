@@ -34,12 +34,14 @@
 
 - name: Validate kubectl client version
   ansible.builtin.assert:
-    that: "'1.33' is version_compare(system_kubectl_client_version, '<=')"
-    fail_msg: kubectl client for system {{ system_kubectl_path }} must be 1.33 or later. Got {{ system_kubectl_client_version }}
-    success_msg: kubectl client version {{ system_kubectl_client_version }} (>= 1.33) is OK.
+    that: "'1.31' is version_compare(system_kubectl_client_version, '<=')"
+    fail_msg: kubectl client for system {{ system_kubectl_path }} must be 1.31 or later. Got {{ system_kubectl_client_version }}
+    success_msg: kubectl client version {{ system_kubectl_client_version }} (>= 1.31) is OK.
 
 - name: Validate kubectl server version
   ansible.builtin.assert:
     that: "'1.31' is version_compare(system_kubectl_server_version, '<=')"
     fail_msg: kubernetes server version for cluster must be 1.31 or later. Got {{ system_kubectl_server_version }}
     success_msg: kubernetes server version {{ system_kubectl_server_version }} (>= 1.31) is OK.
+
+
