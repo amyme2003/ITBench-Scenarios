@@ -25,14 +25,20 @@
     state: directory
     mode: '0755'
 
+- name: Ensure the remediation script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/reemed_cli_runner.py"
+    mode: '0755'
+
 - name: Run Remediation script to fetch data and trigger remediation
   ansible.builtin.command:
     cmd: python3 {{ role_path }}/files/reemed_cli_runner.py /trigger
   environment: "{{ instana_env }}"
   register: remediation_output
   changed_when: false
-  async: 300
-  poll: 10
+  # Increase timeout to 900 seconds (15 minutes)
+  async: 900
+  poll: 30
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
