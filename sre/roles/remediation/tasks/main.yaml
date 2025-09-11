@@ -36,14 +36,18 @@
     dest: "{{ role_path }}/files/Remed_prc.json"
     mode: '0644'
 
-- name: Run Remediation script to fetch data and trigger remediation
-  ansible.builtin.command:
-    cmd: python3 {{ role_path }}/files/reemed_cli_runner.py /trigger
+- name: Run Remediation script in background
+  ansible.builtin.shell: |
+    nohup python3 {{ role_path }}/files/reemed_cli_runner.py /trigger > {{ role_path }}/files/remediation.log 2>&1 &
+    echo $! > {{ role_path }}/files/remediation.pid
   environment: "{{ instana_env }}"
-  register: remediation_output
+  args:
+    executable: /bin/bash
   changed_when: false
-  async: 300
-  poll: 10
+
+- name: Wait for a short time to allow script to start processing
+  ansible.builtin.pause:
+    seconds: 10
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
@@ -58,19 +62,16 @@
 
 - name: Set Remediation data as fact
   ansible.builtin.set_fact:
-    remediation_data: "{{ remediation_json_content.content | b64decode | from_json if remediation_json_file.stat.exists else {} }}"
-  when: remediation_json_file.stat.exists
+    remediation_data: "{{ remediation_json_content.content | b64decode | from_json if remediation_json_file.stat.exists else {'status': 'processing', 'message': 'Job started in background'} }}"
 
 - name: Debug Remediation data (pretty print)
   debug:
     msg: "{{ remediation_data | to_nice_json }}"
-  when: remediation_json_file.stat.exists
 
 - name: Set job artifact
   ansible.builtin.set_stats:
     data:
       remediation_data: "{{ remediation_data }}"
     per_host: false
-  when: remediation_json_file.stat.exists
 
 # Made with Bob
