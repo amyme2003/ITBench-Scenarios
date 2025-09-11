@@ -1,12 +1,10 @@
 ---
-- name: Manage PRC Data Collection from Instana
+- name: Manage Remediation for PRC Incidents
   hosts:
     - environment
   gather_facts: true
   
-  
   pre_tasks:
-
     - name: Validate required variables
       ansible.builtin.assert:
         that:
@@ -16,10 +14,11 @@
       tags:
         - always
 
-  
   tasks:
-    - name: Import PRC role
+    - name: Import Remediation role
       ansible.builtin.import_role:
-        name: ../roles/prc
+        name: ../roles/remediation
       vars:
         instana_api_token: "{{ instana_api_token }}"
+
+
