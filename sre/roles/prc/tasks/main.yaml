@@ -1,19 +1,17 @@
 ---
 # Tasks for PRC role
 
-- name: Install setuptools with pip
-  ansible.builtin.pip:
-    name: setuptools
-    state: present
-  tags:
-    - setup
+- name: Create a virtual environment for PRC script
+  ansible.builtin.shell:
+    cmd: "python3 -m venv {{ role_path }}/venv"
+  args:
+    creates: "{{ role_path }}/venv"
+  changed_when: false
 
-- name: Install Python dependencies
-  ansible.builtin.pip:
-    requirements: "{{ role_path }}/files/requirements.txt"
-    state: present
-  tags:
-    - setup
+- name: Install dependencies in virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/pip install -r {{ role_path }}/files/requirements.txt"
+  changed_when: false
 
 - name: Set environment variable for Instana API token
   ansible.builtin.set_fact:
@@ -31,9 +29,9 @@
     state: directory
     mode: '0755'
 
-- name: Run PRC enrichment script
+- name: Run PRC enrichment script with virtual environment
   ansible.builtin.shell:
-    cmd: "python3 {{ role_path }}/files/prc_enrichment.py"
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/prc_enrichment.py"
   args:
     executable: /bin/bash
   environment: "{{ instana_env }}"
