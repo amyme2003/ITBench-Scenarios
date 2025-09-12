@@ -1,11 +1,10 @@
 ---
 # Tasks for PRC role
 
-- name: Ensure setuptools is installed
-  ansible.builtin.package:
-    name: python3-setuptools
+- name: Install setuptools with pip
+  ansible.builtin.pip:
+    name: setuptools
     state: present
-  become: true
   tags:
     - setup
 
@@ -13,7 +12,6 @@
   ansible.builtin.pip:
     requirements: "{{ role_path }}/files/requirements.txt"
     state: present
-    executable: pip3
   tags:
     - setup
 
@@ -34,8 +32,10 @@
     mode: '0755'
 
 - name: Run PRC enrichment script
-  ansible.builtin.command:
-    cmd: "{{ ansible_python_interpreter | default('/usr/bin/python3') }} {{ role_path }}/files/prc_enrichment.py"
+  ansible.builtin.shell:
+    cmd: "python3 {{ role_path }}/files/prc_enrichment.py"
+  args:
+    executable: /bin/bash
   environment: "{{ instana_env }}"
   register: prc_script_output
   changed_when: false
