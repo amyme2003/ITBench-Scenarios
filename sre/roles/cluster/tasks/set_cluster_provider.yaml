@@ -3,7 +3,7 @@
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Node
-    kubeconfig: "{{ cluster_files.kubeconfig }}"
+    kubeconfig: ""
     label_selectors:
       - node-role.kubernetes.io/control-plane =
   register: cluster_control_nodes_info
@@ -11,3 +11,9 @@
 - name: Set cluster provider variable as control node(s) provider id information
   ansible.builtin.set_fact:
     cluster_provider: "{{ cluster_control_nodes_info.resources[0].spec.providerID | split(':') | first }}"
+  when: cluster_control_nodes_info.resources is defined and cluster_control_nodes_info.resources | length > 0
+
+- name: Set default cluster provider if no control nodes found
+  ansible.builtin.set_fact:
+    cluster_provider: "unknown"
+  when: cluster_control_nodes_info.resources is not defined or cluster_control_nodes_info.resources | length == 0
