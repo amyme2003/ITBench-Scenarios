@@ -1,10 +1,19 @@
 ---
 # Tasks for PRC role
 
+- name: Ensure setuptools is installed
+  ansible.builtin.package:
+    name: python3-setuptools
+    state: present
+  become: true
+  tags:
+    - setup
+
 - name: Install Python dependencies
   ansible.builtin.pip:
     requirements: "{{ role_path }}/files/requirements.txt"
     state: present
+    executable: pip3
   tags:
     - setup
 
@@ -26,10 +35,11 @@
 
 - name: Run PRC enrichment script
   ansible.builtin.command:
-    cmd: python3 {{ role_path }}/files/prc_enrichment.py
+    cmd: "{{ ansible_python_interpreter | default('/usr/bin/python3') }} {{ role_path }}/files/prc_enrichment.py"
   environment: "{{ instana_env }}"
   register: prc_script_output
   changed_when: false
+  ignore_errors: true
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
@@ -45,6 +55,11 @@
 - name: Set PRC data as fact
   ansible.builtin.set_fact:
     prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {'status': 'error', 'message': 'PRC output file not found'} }}"
+
+- name: Create fallback PRC data if script failed
+  ansible.builtin.set_fact:
+    prc_data: "{{ {'status': 'error', 'message': 'PRC script execution failed', 'error': prc_script_output.stderr | default('Unknown error')} }}"
+  when: prc_script_output.rc is defined and prc_script_output.rc != 0
 
 - name: Debug PRC data (pretty print)
   debug:
