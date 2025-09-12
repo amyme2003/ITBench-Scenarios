@@ -1,0 +1,57 @@
+---
+# Tasks for PRC role
+
+- name: Install Python dependencies
+  ansible.builtin.pip:
+    requirements: "{{ role_path }}/files/requirements.txt"
+    state: present
+  tags:
+    - setup
+
+- name: Set environment variable for Instana API token
+  ansible.builtin.set_fact:
+    instana_env:
+      INSTANA_API_TOKEN: "{{ instana_api_token }}"
+
+- name: Ensure the PRC script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/prc_enrichment.py"
+    mode: '0755'
+
+- name: Create artifacts directory
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/../artifacts"
+    state: directory
+    mode: '0755'
+
+- name: Run PRC enrichment script
+  ansible.builtin.command:
+    cmd: python3 {{ role_path }}/files/prc_enrichment.py
+  environment: "{{ instana_env }}"
+  register: prc_script_output
+  changed_when: false
+
+- name: Check if output JSON file exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/prc_label_v3.json"
+  register: prc_json_file
+
+- name: Read PRC JSON output
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/prc_label_v3.json"
+  register: prc_json_content
+  when: prc_json_file.stat.exists
+
+- name: Set PRC data as fact
+  ansible.builtin.set_fact:
+    prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {'status': 'error', 'message': 'PRC output file not found'} }}"
+
+- name: Debug PRC data (pretty print)
+  debug:
+    msg: "{{ prc_data | to_nice_json }}"
+
+- name: Set job artifact
+  ansible.builtin.set_stats:
+    data:
+      prc_data: "{{ prc_data }}"
+    per_host: false
