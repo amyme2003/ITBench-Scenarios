@@ -38,6 +38,7 @@ ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 # Get API token from environment variable (passed by Ansible)
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
 if not API_TOKEN:
+    logger.error("INSTANA_API_TOKEN environment variable is not set. This should be provided by Ansible.")
     raise ValueError("INSTANA_API_TOKEN environment variable is not set. This should be provided by Ansible.")
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
@@ -441,24 +442,62 @@ def save_results(results: List[Dict[str, Any]]) -> None:
 # === Main Runner ===
 
 async def main():
-    incidents = await fetch_incidents()
-    prc_incidents = filter_prc_incidents(incidents)
+    """
+    Main entry point for CLI execution.
+    Fetches and processes PRC incidents, then saves remediation actions to a file.
+    """
+    try:
+        logger.info("Starting remediation process")
+        
+        # Fetch incidents
+        try:
+            incidents = await fetch_incidents()
+            logger.info(f"Fetched {len(incidents)} incidents")
+        except Exception as e:
+            logger.error(f"Failed to fetch incidents: {str(e)}")
+            return {"error": f"Failed to fetch incidents: {str(e)}"}
+        
+        # Filter to PRC incidents
+        prc_incidents = filter_prc_incidents(incidents)
+        logger.info(f"Found {len(prc_incidents)} PRC incidents")
+        
+        if not prc_incidents:
+            logger.info("No PRC incidents found, nothing to process")
+            save_results([])
+            return []
 
-    # Process incidents concurrently with a limit to avoid overwhelming the API
-    # Use a semaphore to limit concurrent API calls
-    semaphore = asyncio.Semaphore(3)  # Allow 3 concurrent API calls
-    
-    async def process_with_semaphore(incident):
-        async with semaphore:
-            return await trigger_remediation(incident)
-    
-    # Process all incidents concurrently with the semaphore
-    results = await asyncio.gather(
-        *[process_with_semaphore(inc) for inc in prc_incidents]
-    )
+        # Process incidents concurrently with a limit to avoid overwhelming the API
+        # Use a semaphore to limit concurrent API calls
+        semaphore = asyncio.Semaphore(3)  # Allow 3 concurrent API calls
+        
+        async def process_with_semaphore(incident):
+            try:
+                async with semaphore:
+                    return await trigger_remediation(incident)
+            except Exception as e:
+                event_id = incident.get("eventId", "unknown")
+                logger.error(f"Error processing incident {event_id}: {str(e)}")
+                return {
+                    "incident_id": event_id,
+                    "entity_label": incident.get("entityLabel", "unknown"),
+                    "status_code": 0,
+                    "error": f"Error processing incident: {str(e)}"
+                }
+        
+        # Process all incidents concurrently with the semaphore
+        results = await asyncio.gather(
+            *[process_with_semaphore(inc) for inc in prc_incidents]
+        )
 
-    save_results(results)
-    return results
+        # Save results to file
+        save_results(results)
+        logger.info(f"Remediation process completed successfully for {len(results)} incidents")
+        
+        return results
+    except Exception as e:
+        logger.exception(f"Error in main function: {e}")
+        save_results([{"error": str(e)}])
+        return {"error": str(e)}
 
 
 # === API Endpoints ===
@@ -494,14 +533,22 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
         # Run the main function
         results = await main()
 
+        # Ensure results is a list
+        if isinstance(results, dict) and "error" in results:
+            results_list = [results]
+        elif isinstance(results, list):
+            results_list = results
+        else:
+            results_list = [{"error": "Unknown result format"}]
+
         # Count incidents
-        incidents_count = len(results) if results else 0
+        incidents_count = len(results_list)
 
         return RemediationResponse(
             total_incidents=incidents_count,
             prc_incidents=incidents_count,
             processed_incidents=incidents_count,
-            results=results
+            results=results_list
         )
     except Exception as e:
         logger.error(f"Error in trigger endpoint: {str(e)}")
@@ -512,15 +559,7 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
 
 
 if __name__ == "__main__":
-    import uvicorn
-
-    # Configure uvicorn server
-    uvicorn.run(
-        "remediation_trigger:app", 
-        host="127.0.0.1", 
-        port=8007, 
-        reload=True,
-        log_level="info"
-    )
+    # Run in CLI mode by default
+    asyncio.run(main())
 
 
