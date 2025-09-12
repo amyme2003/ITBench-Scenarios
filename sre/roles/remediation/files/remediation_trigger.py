@@ -19,14 +19,9 @@ import uvicorn
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
+# Environment variables are passed directly from Ansible
 import os
 from pathlib import Path
-
-# Load environment variables
-load_dotenv()
 
 # === Logger Setup ===
 logger = logging.getLogger("remediation_trigger")
@@ -40,10 +35,10 @@ BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 
-# Get API token from environment variable
+# Get API token from environment variable (passed by Ansible)
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
 if not API_TOKEN:
-    raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
+    raise ValueError("INSTANA_API_TOKEN environment variable is not set. This should be provided by Ansible.")
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
     "Content-Type": "application/json"
@@ -69,9 +64,9 @@ class RemediationResponse(BaseModel):
 # === API Calls ===
 
 async def fetch_incidents() -> List[Dict[str, Any]]:
-    """Fetch incidents from API."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
+    """Fetch incidents from API with timeout protection."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.get(INCIDENTS_API_URL, headers=HEADERS, timeout=10.0)
         response.raise_for_status()
         data = response.json()
 
@@ -82,8 +77,17 @@ async def fetch_incidents() -> List[Dict[str, Any]]:
         return data
 
 
-def filter_prc_incidents(incidents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Keep only open PRC incidents."""
+def filter_prc_incidents(incidents: List[Dict[str, Any]], max_incidents: int = 5) -> List[Dict[str, Any]]:
+    """
+    Keep only open PRC incidents, limited to max_incidents.
+    
+    Args:
+        incidents: List of incidents to filter
+        max_incidents: Maximum number of incidents to process (default: 5)
+    
+    Returns:
+        List of filtered PRC incidents, limited to max_incidents
+    """
     seen_ids = set()
     prc_incidents = []
     for inc in incidents:
@@ -96,6 +100,11 @@ def filter_prc_incidents(incidents: List[Dict[str, Any]]) -> List[Dict[str, Any]
             if eid not in seen_ids:
                 seen_ids.add(eid)
                 prc_incidents.append(inc)
+                
+                # Limit the number of incidents to process
+                if len(prc_incidents) >= max_incidents:
+                    logger.info(f"Limiting to {max_incidents} PRC incidents (out of {len(incidents)})")
+                    break
 
     logger.info(f"Filtered to {len(prc_incidents)} PRC incidents")
     return prc_incidents
@@ -117,8 +126,8 @@ async def get_endpoint_label(steady_id: str, timestamp: int) -> str:
             }
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(endpoint_url, json=payload, headers=HEADERS)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(endpoint_url, json=payload, headers=HEADERS, timeout=10.0)
             response.raise_for_status()
             data = response.json()
 
@@ -150,8 +159,8 @@ async def get_service_label(service_id: str, timestamp: int) -> str:
             }
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(service_url, json=payload, headers=HEADERS)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(service_url, json=payload, headers=HEADERS, timeout=10.0)
             response.raise_for_status()
             data = response.json()
 
@@ -201,8 +210,8 @@ async def get_infrastructure_label(snapshot_id: str, plugin_id: str, timestamp: 
             }
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(infrastructure_url, json=payload, headers=HEADERS)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(infrastructure_url, json=payload, headers=HEADERS, timeout=10.0)
             response.raise_for_status()
             data = response.json()
 
@@ -238,7 +247,26 @@ def get_plugin_type(plugin_id: str) -> str:
         return "unknown"
 
 async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
-    """Trigger remediation API for one incident."""
+    """Trigger remediation API for one incident with timeout protection."""
+    # Set a timeout for the entire function
+    try:
+        return await asyncio.wait_for(
+            _trigger_remediation(incident),
+            timeout=30.0  # 30 second timeout for the entire function
+        )
+    except asyncio.TimeoutError:
+        event_id = incident.get("eventId", "unknown")
+        entity_label = incident.get("entityLabel", "unknown")
+        logger.error(f"Timeout occurred while processing incident {event_id}")
+        return {
+            "incident_id": event_id,
+            "entity_label": entity_label,
+            "status_code": 0,
+            "error": "Timeout occurred while processing incident"
+        }
+
+async def _trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
+    """Internal implementation of trigger_remediation."""
     event_id = incident.get("eventId")
     entity_label = incident.get("entityLabel")
 
@@ -249,11 +277,12 @@ async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
 
     if event_spec_id:
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 spec_response = await client.post(
                     f"{BASE_URL}/api/events/settings/event-specifications/infos",
                     headers=HEADERS,
-                    json=[event_spec_id]
+                    json=[event_spec_id],
+                    timeout=10.0
                 )
                 spec_response.raise_for_status()
 
@@ -278,11 +307,12 @@ async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         # First API call with original payload
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:  # Reduced timeout
             response = await client.post(
                 ACTION_GENERATION_URL,
                 headers=HEADERS,
-                json=post_body
+                json=post_body,
+                timeout=10.0  # Explicit timeout for this request
             )
             response.raise_for_status()
             logger.info(f"Success for first API call: {event_id}")
@@ -355,11 +385,12 @@ async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
             }
 
             try:
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=15.0) as client:  # Reduced timeout
                     additional_response = await client.post(
                         ACTION_GENERATION_URL,
                         headers=HEADERS,
-                        json=additional_payload
+                        json=additional_payload,
+                        timeout=10.0  # Explicit timeout for this request
                     )
                     additional_response.raise_for_status()
                     logger.info(f"Success for additional API call for {plugin_type} {entity_id_value}")
@@ -413,10 +444,18 @@ async def main():
     incidents = await fetch_incidents()
     prc_incidents = filter_prc_incidents(incidents)
 
-    results = []
-    for inc in prc_incidents:
-        res = await trigger_remediation(inc)
-        results.append(res)
+    # Process incidents concurrently with a limit to avoid overwhelming the API
+    # Use a semaphore to limit concurrent API calls
+    semaphore = asyncio.Semaphore(3)  # Allow 3 concurrent API calls
+    
+    async def process_with_semaphore(incident):
+        async with semaphore:
+            return await trigger_remediation(incident)
+    
+    # Process all incidents concurrently with the semaphore
+    results = await asyncio.gather(
+        *[process_with_semaphore(inc) for inc in prc_incidents]
+    )
 
     save_results(results)
     return results
