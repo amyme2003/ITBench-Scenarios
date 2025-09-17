@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dotenv import load_dotenv
 
@@ -25,7 +26,7 @@ from fastapi.responses import JSONResponse
 load_dotenv()
 
 # API URLs
-BASE_URL = "https://release-instana.instana.rocks"
+BASE_URL = "https://demoeu-instana.instana.io"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
@@ -42,7 +43,7 @@ HEADERS = {
 
 # Output configuration
 # Save to current working directory
-OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_label_v3.json")
+OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_output.json")
 
 # Time window for metrics queries (1 hour in milliseconds)
 METRICS_WINDOW_SIZE = 3600000
@@ -337,7 +338,7 @@ async def get_infrastructure_details(snapshot_id: str, to_timestamp: int, plugin
 
 async def fetch_incidents_data() -> List[Dict[str, Any]]:
     """
-    Fetch incident data from the Instana API.
+    Fetch incident data from the Instana API with a 24-hour time window.
     
     Returns:
         A list of incident data dictionaries
@@ -346,6 +347,15 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         ValueError: If the response is not a list
         httpx.HTTPError: If there's an HTTP error
     """
+    # Calculate time parameters for the last 24 hours
+    to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
+    window_size = 259200000  # 72 hours in milliseconds
+    
+    # Build URL with time parameters
+    #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
+    
+    logger.info(f"Fetching incidents with a 24-hour window (to={to_timestamp}, windowSize={window_size})")
+    
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
         response.raise_for_status()
@@ -353,7 +363,8 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         
         if not isinstance(data, list):
             raise ValueError("Expected a list of incidents")
-            
+        
+        logger.info(f"Fetched {len(data)} incidents from API")
         return data
 
 
@@ -367,12 +378,27 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]]) -> List[Dict[str,
     Returns:
         A filtered list containing only PRC incidents
     """
-    return [
+    # Log information about the incidents before filtering
+    states = set(incident.get("state") for incident in incidents_data)
+    types = set(incident.get("type") for incident in incidents_data)
+    prc_counts = sum(1 for incident in incidents_data if incident.get("probableCause", {}).get("found") is True)
+    
+    logger.info(f"Incident states found: {states}")
+    logger.info(f"Incident types found: {types}")
+    logger.info(f"Incidents with PRC found=True: {prc_counts}")
+    
+    # Apply the filtering criteria
+    filtered = [
         incident for incident in incidents_data
         if incident.get("type") == "incident"
-        and incident.get("state") == "open"
+        #and incident.get("state") == "closed"
         and incident.get("probableCause", {}).get("found") is True
+        and incident.get("entityLabel", "").startswith("otel-demo-")
+        and incident.get("problem","").startswith("Alert on all services")
     ]
+    
+    logger.info(f"After filtering: {len(filtered)} PRC incidents")
+    return filtered
 
 
 # === Plugin Handler Registry ===
@@ -567,33 +593,9 @@ async def process_incident(incident: Dict[str, Any]) -> Tuple[str, Dict[str, Any
     return key, entry
 
 
-def save_output_to_file(output: Dict[str, Any], file_path: str) -> None:
+async def main():
     """
-    Save the output data to a JSON file.
-    
-    Args:
-        output: The data to save
-        file_path: The path to save the file to
-    """
-    try:
-        with open(file_path, "w") as f:
-            json.dump(output, f, indent=4)
-        logger.info(f"Output saved to {file_path}")
-    except IOError as e:
-        logger.error(f"Failed to save output to {file_path}: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error saving output: {e}")
-
-
-# === FastAPI Endpoints ===
-
-@app.get("/prc-details")
-async def fetch_prc_details():
-    """
-    Fetch and enrich PRC incident data with endpoint/service/infrastructure labels nested inside entityID.
-    
-    Returns:
-        JSON response with enriched PRC data or error details
+    Main function to fetch and process PRC data.
     """
     output = {}
     try:
@@ -614,81 +616,31 @@ async def fetch_prc_details():
             output[key] = entry
 
         # Save to file
-        save_output_to_file(output, OUTPUT_FILE_PATH)
+        with open(OUTPUT_FILE_PATH, "w") as f:
+            json.dump(output, f, indent=4)
+        logger.info(f"Output saved to {OUTPUT_FILE_PATH}")
         
         return output
 
     except httpx.HTTPStatusError as e:
         error_msg = f"HTTP error {e.response.status_code}: {e}"
         logger.error(error_msg)
-        return JSONResponse(
-            status_code=e.response.status_code, 
-            content={"error": error_msg}
-        )
+        return {"error": error_msg}
     except httpx.RequestError as e:
         error_msg = f"Request error: {e}"
         logger.error(error_msg)
-        return JSONResponse(status_code=503, content={"error": error_msg})
+        return {"error": error_msg}
     except ValueError as e:
         error_msg = f"Value error: {e}"
         logger.error(error_msg)
-        return JSONResponse(status_code=422, content={"error": error_msg})
+        return {"error": error_msg}
     except Exception as e:
         error_msg = f"Failed to fetch PRC details: {e}"
         logger.exception(error_msg)
-        return JSONResponse(status_code=500, content={"error": error_msg})
+        return {"error": error_msg}
 
-
-# === CLI Entry Point for AWX ===
-async def main():
-    """
-    Main entry point for CLI execution.
-    Fetches and processes PRC data, then saves it to a file.
-    """
-    try:
-        logger.info("Starting PRC enrichment process")
-        
-        # Fetch and process incidents
-        incidents_data = await fetch_incidents_data()
-        logger.info(f"Fetched {len(incidents_data)} incidents")
-        
-        prc_incidents = filter_prc_incidents(incidents_data)
-        logger.info(f"Found {len(prc_incidents)} PRC incidents")
-
-        # Process all incidents concurrently
-        results = await asyncio.gather(
-            *[process_incident(incident) for incident in prc_incidents]
-        )
-
-        # Build output dictionary
-        output = {}
-        for key, entry in results:
-            output[key] = entry
-
-        # Save to file
-        save_output_to_file(output, OUTPUT_FILE_PATH)
-        logger.info("PRC enrichment completed successfully")
-        
-        return output
-    except Exception as e:
-        logger.exception(f"Error in main function: {e}")
-        return {"error": str(e)}
-
-# === Main Entry Point ===
 
 if __name__ == "__main__":
-    if os.environ.get("RUN_MODE") == "api":
-        import uvicorn
-        # Configure uvicorn server
-        uvicorn.run(
-            "prc_enrichment:app", 
-            host="127.0.0.1", 
-            port=8004, 
-            reload=True,
-            log_level="info"
-        )
-    else:
-        # Run in CLI mode
-        asyncio.run(main())
+    asyncio.run(main())
 
 
