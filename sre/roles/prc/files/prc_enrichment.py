@@ -17,8 +17,6 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dotenv import load_dotenv
 
 import httpx
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 # === Constants and Configuration ===
 
@@ -53,13 +51,6 @@ logger = logging.getLogger("prc_enrich")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
-# === FastAPI App ===
-app = FastAPI(
-    title="PRC Enrichment API",
-    description="API for fetching and enriching Probable Root Cause data",
-    version="9.0.0"
 )
 
 # === Metric Fetchers ===
@@ -593,6 +584,24 @@ async def process_incident(incident: Dict[str, Any]) -> Tuple[str, Dict[str, Any
     return key, entry
 
 
+def save_output_to_file(output: Dict[str, Any], file_path: str) -> None:
+    """
+    Save the output data to a JSON file.
+    
+    Args:
+        output: The data to save
+        file_path: The path to save the file to
+    """
+    try:
+        with open(file_path, "w") as f:
+            json.dump(output, f, indent=4)
+        logger.info(f"Output saved to {file_path}")
+    except IOError as e:
+        logger.error(f"Failed to save output to {file_path}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error saving output: {e}")
+
+
 async def main():
     """
     Main function to fetch and process PRC data.
@@ -615,30 +624,38 @@ async def main():
         for key, entry in results:
             output[key] = entry
 
-        # Save to file
-        with open(OUTPUT_FILE_PATH, "w") as f:
-            json.dump(output, f, indent=4)
-        logger.info(f"Output saved to {OUTPUT_FILE_PATH}")
+        # Save to file - this will be picked up by the Ansible role
+        save_output_to_file(output, OUTPUT_FILE_PATH)
         
         return output
 
     except httpx.HTTPStatusError as e:
         error_msg = f"HTTP error {e.response.status_code}: {e}"
         logger.error(error_msg)
-        return {"error": error_msg}
+        error_output = {"status": "error", "message": error_msg}
+        save_output_to_file(error_output, OUTPUT_FILE_PATH)
+        return error_output
     except httpx.RequestError as e:
         error_msg = f"Request error: {e}"
         logger.error(error_msg)
-        return {"error": error_msg}
+        error_output = {"status": "error", "message": error_msg}
+        save_output_to_file(error_output, OUTPUT_FILE_PATH)
+        return error_output
     except ValueError as e:
         error_msg = f"Value error: {e}"
         logger.error(error_msg)
-        return {"error": error_msg}
+        error_output = {"status": "error", "message": error_msg}
+        save_output_to_file(error_output, OUTPUT_FILE_PATH)
+        return error_output
     except Exception as e:
         error_msg = f"Failed to fetch PRC details: {e}"
         logger.exception(error_msg)
-        return {"error": error_msg}
+        error_output = {"status": "error", "message": error_msg}
+        save_output_to_file(error_output, OUTPUT_FILE_PATH)
+        return error_output
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
