@@ -13,15 +13,24 @@ import json
 import logging
 import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from dotenv import load_dotenv
 
 import httpx
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 # === Constants and Configuration ===
 
 # Load environment variables from .env file
 load_dotenv()
+
+# === Logger Setup ===
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("prc_enrich")
 
 # API URLs
 BASE_URL = "https://demoeu-instana.instana.io"
@@ -29,6 +38,15 @@ INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
 INFRASTRUCTURE_ENTITIES_URL = f"{BASE_URL}/api/infrastructure-monitoring/analyze/entities"
+
+# Get incident ID from environment variable (passed from AWX UI extra variables)
+INCIDENT_ID = os.environ.get("INCIDENT_ID")
+if INCIDENT_ID and INCIDENT_ID.isdigit():
+    incident_id = int(INCIDENT_ID)
+    logger.info(f"Using incident_id {incident_id} from environment variable")
+else:
+    incident_id = 3  # default
+    logger.info(f"Using default incident_id {incident_id} (environment variable not set or invalid)")
 
 # Get API token from environment variable
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
@@ -40,17 +58,17 @@ HEADERS = {
 }
 
 # Output configuration
-# Save to current working directory
+# Save to current working directory - use prc_output.json to match what the Ansible role expects
 OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_output.json")
 
 # Time window for metrics queries (1 hour in milliseconds)
 METRICS_WINDOW_SIZE = 3600000
 
-# === Logger Setup ===
-logger = logging.getLogger("prc_enrich")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# === FastAPI App ===
+app = FastAPI(
+    title="PRC Enrichment API",
+    description="API for fetching and enriching Probable Root Cause data",
+    version="9.0.0"
 )
 
 # === Metric Fetchers ===
@@ -340,15 +358,16 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
     """
     # Calculate time parameters for the last 24 hours
     to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
-    window_size = 259200000  # 72 hours in milliseconds
+    window_size = 3600000   # last 1 hours in milliseconds
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
+    Modified_url = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
     
-    logger.info(f"Fetching incidents with a 24-hour window (to={to_timestamp}, windowSize={window_size})")
+    logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")
     
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
+        response = await client.get(Modified_url, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
@@ -359,12 +378,14 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         return data
 
 
-def filter_prc_incidents(incidents_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Optional[int] = None) -> List[Dict[str, Any]]:
     """
     Filter incidents to only include those with probable root causes.
+    Different filtering criteria are applied based on the incident_id.
     
     Args:
         incidents_data: The full list of incidents
+        incident_id: Optional incident ID to filter by
         
     Returns:
         A filtered list containing only PRC incidents
@@ -377,16 +398,36 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]]) -> List[Dict[str,
     logger.info(f"Incident states found: {states}")
     logger.info(f"Incident types found: {types}")
     logger.info(f"Incidents with PRC found=True: {prc_counts}")
+    logger.info(f"Filtering for incident_id: {incident_id if incident_id is not None else 'All'}")
     
-    # Apply the filtering criteria
-    filtered = [
-        incident for incident in incidents_data
-        if incident.get("type") == "incident"
-        #and incident.get("state") == "closed"
-        and incident.get("probableCause", {}).get("found") is True
-        and incident.get("entityLabel", "").startswith("otel-demo-")
-        and incident.get("problem","").startswith("Alert on all services")
-    ]
+    # Apply different filtering criteria based on incident_id
+    if incident_id == 23:
+        # Filtering criteria for incident_id 23
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and (incident.get("entityLabel", "").startswith("otel-demo-frontend") or
+                 incident.get("entityLabel", "").startswith("otel-demo-checkout"))
+            and incident.get("problem","").startswith("Alert on all services")
+        ]
+    elif incident_id == 3:
+        # Filtering criteria for incident_id 3
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and incident.get("entityLabel", "").startswith("otel-demo-frontend")
+            and incident.get("problem","").startswith("Alert on all services")
+        ]
+    else:
+        # Default filtering criteria for other incident_ids or when no specific id is provided
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and (incident_id is None or incident.get("incidentId") == incident_id)
+        ]
     
     logger.info(f"After filtering: {len(filtered)} PRC incidents")
     return filtered
@@ -602,9 +643,15 @@ def save_output_to_file(output: Dict[str, Any], file_path: str) -> None:
         logger.error(f"Unexpected error saving output: {e}")
 
 
-async def main():
+# === FastAPI Endpoints ===
+
+@app.get("/prc-details")
+async def fetch_prc_details():
     """
-    Main function to fetch and process PRC data.
+    Fetch and enrich PRC incident data with endpoint/service/infrastructure labels nested inside entityID.
+    
+    Returns:
+        JSON response with enriched PRC data or error details
     """
     output = {}
     try:
@@ -612,7 +659,8 @@ async def main():
         incidents_data = await fetch_incidents_data()
         logger.info(f"Fetched {len(incidents_data)} incidents")
         
-        prc_incidents = filter_prc_incidents(incidents_data)
+        # Use the global incident_id variable for filtering
+        prc_incidents = filter_prc_incidents(incidents_data, incident_id)
         logger.info(f"Found {len(prc_incidents)} PRC incidents")
 
         # Process all incidents concurrently
@@ -624,7 +672,7 @@ async def main():
         for key, entry in results:
             output[key] = entry
 
-        # Save to file - this will be picked up by the Ansible role
+        # Save to file
         save_output_to_file(output, OUTPUT_FILE_PATH)
         
         return output
@@ -632,30 +680,37 @@ async def main():
     except httpx.HTTPStatusError as e:
         error_msg = f"HTTP error {e.response.status_code}: {e}"
         logger.error(error_msg)
-        error_output = {"status": "error", "message": error_msg}
-        save_output_to_file(error_output, OUTPUT_FILE_PATH)
-        return error_output
+        return JSONResponse(
+            status_code=e.response.status_code, 
+            content={"error": error_msg}
+        )
     except httpx.RequestError as e:
         error_msg = f"Request error: {e}"
         logger.error(error_msg)
-        error_output = {"status": "error", "message": error_msg}
-        save_output_to_file(error_output, OUTPUT_FILE_PATH)
-        return error_output
+        return JSONResponse(status_code=503, content={"error": error_msg})
     except ValueError as e:
         error_msg = f"Value error: {e}"
         logger.error(error_msg)
-        error_output = {"status": "error", "message": error_msg}
-        save_output_to_file(error_output, OUTPUT_FILE_PATH)
-        return error_output
+        return JSONResponse(status_code=422, content={"error": error_msg})
     except Exception as e:
         error_msg = f"Failed to fetch PRC details: {e}"
         logger.exception(error_msg)
-        error_output = {"status": "error", "message": error_msg}
-        save_output_to_file(error_output, OUTPUT_FILE_PATH)
-        return error_output
+        return JSONResponse(status_code=500, content={"error": error_msg})
 
+
+
+# === Main Entry Point ===
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import uvicorn
+    
+    # Configure uvicorn server
+    uvicorn.run(
+        "prc_enrichment:app", 
+        host="127.0.0.1", 
+        port=8027, 
+        reload=True,
+        log_level="info"
+    )
 
-
+# Made with Bob

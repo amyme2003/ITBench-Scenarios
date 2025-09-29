@@ -13,10 +13,11 @@
     cmd: "{{ role_path }}/venv/bin/pip install -r {{ role_path }}/files/requirements.txt"
   changed_when: false
 
-- name: Set environment variable for Instana API token
+- name: Set environment variables for Instana API token and incident ID
   ansible.builtin.set_fact:
     instana_env:
       INSTANA_API_TOKEN: "{{ instana_api_token }}"
+      INCIDENT_ID: "{{ prc_incident_id | default('') }}"
 
 - name: Ensure the PRC enrichment script has execute permissions
   ansible.builtin.file:

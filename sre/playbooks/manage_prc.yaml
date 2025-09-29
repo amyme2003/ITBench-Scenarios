@@ -11,7 +11,8 @@
       ansible.builtin.assert:
         that:
           - instana_api_token is defined
-        fail_msg: "instana_api_token is required. This should be provided securely via AWX credentials."
+          - incident_id is defined
+        fail_msg: "instana_api_token and incident_id are required. incident_id should be passed as a global variable."
         success_msg: "All required variables are defined"
       tags:
         - always
@@ -23,5 +24,6 @@
         name: ../roles/prc
       vars:
         instana_api_token: "{{ instana_api_token }}"
+        prc_incident_id: "{{ incident_id }}"
 
 
