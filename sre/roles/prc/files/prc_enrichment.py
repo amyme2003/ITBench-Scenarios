@@ -698,19 +698,41 @@ async def fetch_prc_details():
         return JSONResponse(status_code=500, content={"error": error_msg})
 
 
+# Function to process data and exit
+async def process_data_and_exit():
+    """Process the data and exit without starting the web server"""
+    try:
+        # Fetch and process incidents
+        incidents_data = await fetch_incidents_data()
+        logger.info(f"Fetched {len(incidents_data)} incidents")
+        
+        # Use the global incident_id variable for filtering
+        prc_incidents = filter_prc_incidents(incidents_data, incident_id)
+        logger.info(f"Found {len(prc_incidents)} PRC incidents")
+
+        # Process all incidents concurrently
+        results = await asyncio.gather(
+            *[process_incident(incident) for incident in prc_incidents]
+        )
+
+        # Build output dictionary
+        output = {}
+        for key, entry in results:
+            output[key] = entry
+
+        # Save to file
+        save_output_to_file(output, OUTPUT_FILE_PATH)
+        logger.info("Data processing completed successfully")
+        
+    except Exception as e:
+        logger.exception(f"Error processing data: {e}")
+        raise
+
 
 # === Main Entry Point ===
 
 if __name__ == "__main__":
-    import uvicorn
-    
-    # Configure uvicorn server
-    uvicorn.run(
-        "prc_enrichment:app", 
-        host="127.0.0.1", 
-        port=8027, 
-        reload=True,
-        log_level="info"
-    )
+    # When run as a script, just process the data and exit
+    asyncio.run(process_data_and_exit())
 
 # Made with Bob
