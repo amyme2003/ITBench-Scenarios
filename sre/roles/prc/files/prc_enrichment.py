@@ -32,8 +32,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("prc_enrich")
 
+# Get the current environment (default to 'demoeu' if not specified)
+ENVIRONMENT = os.environ.get("INSTANA_ENVIRONMENT", "demoeu").upper()
+
 # API URLs
-BASE_URL = "https://demoeu-instana.instana.io"
+BASE_URL = os.environ.get("INSTANA_URL", "https://demoeu-instana.instana.io")
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
@@ -615,6 +618,7 @@ async def process_incident(incident: Dict[str, Any]) -> Tuple[str, Dict[str, Any
 
     # Create the enriched entry
     entry = {
+        "incident_id": incident_id,
         "entityType": incident.get("entityType", ""),
         "problem": incident.get("problem", ""),
         "detail": incident.get("detail", ""),
@@ -660,6 +664,7 @@ async def fetch_prc_details():
         logger.info(f"Fetched {len(incidents_data)} incidents")
         
         # Use the global incident_id variable for filtering
+        logger.info(f"Using incident_id: {incident_id} from environment variable")
         prc_incidents = filter_prc_incidents(incidents_data, incident_id)
         logger.info(f"Found {len(prc_incidents)} PRC incidents")
 
@@ -735,4 +740,4 @@ if __name__ == "__main__":
     # When run as a script, just process the data and exit
     asyncio.run(process_data_and_exit())
 
-# Made with Bob
+
