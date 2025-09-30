@@ -365,12 +365,12 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
-    Modified_url = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    #Modified_url = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
     
     logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")
     
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(Modified_url, headers=HEADERS)
+        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
@@ -429,7 +429,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             incident for incident in incidents_data
             if incident.get("type") == "incident"
             and incident.get("probableCause", {}).get("found") is True
-            and (incident_id is None or incident.get("incidentId") == incident_id)
+            
         ]
     
     logger.info(f"After filtering: {len(filtered)} PRC incidents")
