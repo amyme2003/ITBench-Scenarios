@@ -4,7 +4,6 @@ metadata:
   id: 38
   name: Misconfigured HPA Cost Increase
   platform: kubernetes
-  technologies: []
 spec:
   environment:
     applications:
@@ -36,6 +35,8 @@ spec:
           load_generator:
             users: 30
           payment:
+            autoscaling: true
+          postgres:
             autoscaling: true
           product_catalog:
             autoscaling: true
