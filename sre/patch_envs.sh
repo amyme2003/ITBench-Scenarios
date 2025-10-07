@@ -115,6 +115,14 @@ patch_env "frontend-proxy" "OTEL_COLLECTOR_HOST" "$INSTANA_AGENT"
 # 7. image-provider
 patch_env "image-provider" "OTEL_COLLECTOR_HOST" "$INSTANA_AGENT"
 
-echo "All deployments patched successfully."
+# Restart all deployments to ensure changes take effect
+echo "Restarting all deployments to apply changes..."
+kubectl -n "$NAMESPACE" rollout restart deployment
+
+# Wait for rollouts to complete
+echo "Waiting for rollouts to complete..."
+kubectl -n "$NAMESPACE" rollout status deployment --all --timeout=300s
+
+echo "All deployments patched and restarted successfully."
 
 
