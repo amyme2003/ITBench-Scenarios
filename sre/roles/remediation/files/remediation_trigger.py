@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Remediation for Triggering Context and PRC
+ WIP- Remediation for Triggering Context and PRC
 
+Run the file and put /trigger in the path to get the output
 This service fetches incident data with probable root causes (PRC) and triggers
-manual AI generated actions by sending the incident details to the AI action
-generation endpoint. The first response is for the triggering entity, actions for PRC 
-are added under the heading additional responses.
+manual ai generated actions by sending the incident details to the AI action
+generation endpoint.The first response is for the triggering entity , actions for prc are added under the heading additional responses.
 The results are saved to a JSON file.
 """
 import asyncio
@@ -19,9 +19,15 @@ import uvicorn
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-# Environment variables are passed directly from Ansible
-import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
 from pathlib import Path
+
+# Get the absolute path to the .env file
+base_dir = Path(__file__).resolve().parent
+env_path = os.path.join(base_dir, '.env')
+load_dotenv(dotenv_path=env_path)
 
 # === Logger Setup ===
 logger = logging.getLogger("remediation_trigger")
@@ -31,19 +37,31 @@ logging.basicConfig(
 )
 
 # API URLs
-BASE_URL = "https://release-instana.instana.rocks"
+BASE_URL = "https://demoeu-instana.instana.io"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 
-# Get API token from environment variable (passed by Ansible)
+# Get API token from environment variable
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
 if not API_TOKEN:
-    logger.error("INSTANA_API_TOKEN environment variable is not set. This should be provided by Ansible.")
-    raise ValueError("INSTANA_API_TOKEN environment variable is not set. This should be provided by Ansible.")
+    raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
     "Content-Type": "application/json"
 }
+
+# Get incident ID from environment variable (passed from AWX UI extra variables)
+INCIDENT_ID = os.environ.get("INCIDENT_ID")
+if INCIDENT_ID and INCIDENT_ID.isdigit():
+    incident_id = int(INCIDENT_ID)
+    logger.info(f"Using incident_id {incident_id} from environment variable")
+elif INCIDENT_ID:
+    logger.warning(f"Invalid incident_id format: {INCIDENT_ID}. Must be a number.")
+    incident_id = None
+else:
+    incident_id = None  # No default, will show all incidents if not specified
+    logger.info(f"No incident_id provided, will show all matching incidents")
+
 # Output configuration
 OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "remediation_output.json")
 
@@ -61,13 +79,20 @@ class RemediationResponse(BaseModel):
     processed_incidents: int
     results: List[Dict[str, Any]]
 
-
 # === API Calls ===
 
 async def fetch_incidents() -> List[Dict[str, Any]]:
-    """Fetch incidents from API with timeout protection."""
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.get(INCIDENTS_API_URL, headers=HEADERS, timeout=10.0)
+    """Fetch incidents from API."""
+    # Calculate time parameters for the last 24 hours
+    #to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
+    #window_size = 3600000    # last 1 hours in milliseconds
+    
+    # Build URL with time parameters
+    #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
+    Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    #logger.info(f"Fetching incidents with a 18sep to 19sep window (to={to_timestamp}, windowSize={window_size})")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(Modified_url, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
 
@@ -78,44 +103,74 @@ async def fetch_incidents() -> List[Dict[str, Any]]:
         return data
 
 
-def filter_prc_incidents(incidents: List[Dict[str, Any]], max_incidents: int = 5) -> List[Dict[str, Any]]:
+def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Optional[int] = None) -> List[Dict[str, Any]]:
     """
-    Keep only open PRC incidents, limited to max_incidents.
+    Filter incidents to only include those with probable root causes.
+    Different filtering criteria are applied based on the incident_id.
     
     Args:
-        incidents: List of incidents to filter
-        max_incidents: Maximum number of incidents to process (default: 5)
-    
+        incidents_data: The full list of incidents
+        incident_id: Optional incident ID to filter by
+        
     Returns:
-        List of filtered PRC incidents, limited to max_incidents
+        A filtered list containing only PRC incidents
     """
-    seen_ids = set()
-    prc_incidents = []
-    for inc in incidents:
-        if (
-            inc.get("type") == "incident"
-            and inc.get("state") == "open"
-            and inc.get("probableCause", {}).get("found") is True
-        ):
-            eid = inc.get("eventId")
-            if eid not in seen_ids:
-                seen_ids.add(eid)
-                prc_incidents.append(inc)
-                
-                # Limit the number of incidents to process
-                if len(prc_incidents) >= max_incidents:
-                    logger.info(f"Limiting to {max_incidents} PRC incidents (out of {len(incidents)})")
-                    break
-
-    logger.info(f"Filtered to {len(prc_incidents)} PRC incidents")
-    return prc_incidents
+    # Log information about the incidents before filtering
+    states = set(incident.get("state") for incident in incidents_data)
+    types = set(incident.get("type") for incident in incidents_data)
+    prc_counts = sum(1 for incident in incidents_data if incident.get("probableCause", {}).get("found") is True)
+    
+    logger.info(f"Incident states found: {states}")
+    logger.info(f"Incident types found: {types}")
+    logger.info(f"Incidents with PRC found=True: {prc_counts}")
+    logger.info(f"Filtering for incident_id: {incident_id if incident_id is not None else 'All'}")
+    
+    # Apply different filtering criteria based on incident_id
+    if incident_id == 23:
+        # Filtering criteria for incident_id 23
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and (incident.get("entityLabel", "").startswith("otel-demo-frontend") or
+                 incident.get("entityLabel", "").startswith("otel-demo-checkout"))
+            and incident.get("problem","").startswith("Alert on all services")
+        ]
+    elif incident_id == 3:
+        # Filtering criteria for incident_id 3
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and incident.get("entityLabel", "").startswith("otel-demo-frontend")
+            and incident.get("problem","").startswith("Alert on all services")
+        ]
+    else:
+        # Check if incident_id is provided but not valid
+        if incident_id is not None and not any(incident.get("incidentId") == incident_id for incident in incidents_data):
+            logger.warning(f"Invalid incident_id: {incident_id}. No matching incident found.")
+            print(f"Invalid incident_id: {incident_id}. No matching incident found.")
+            filtered = []  # Return empty list for invalid incident_id
+        else:
+            # Default filtering criteria for other incident_ids or when no specific id is provided
+            filtered = []
+            #Invalid incident_id message here
+    
+    logger.info(f"After filtering: {len(filtered)} PRC incidents")
+    
+    # Check if no incidents were found after filtering
+    if len(filtered) == 0:
+        logger.info("No incidents found after filtering.")
+        print("No incidents found after filtering.")
+    
+    return filtered
 
 
 async def get_endpoint_label(steady_id: str, timestamp: int) -> str:
     """Fetch endpoint label for a given endpoint ID."""
     if not steady_id:
         return "Unknown Endpoint"
-
+        
     try:
         endpoint_url = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
         payload = {
@@ -127,8 +182,8 @@ async def get_endpoint_label(steady_id: str, timestamp: int) -> str:
             }
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(endpoint_url, json=payload, headers=HEADERS, timeout=10.0)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(endpoint_url, json=payload, headers=HEADERS)
             response.raise_for_status()
             data = response.json()
 
@@ -148,7 +203,7 @@ async def get_service_label(service_id: str, timestamp: int) -> str:
     """Fetch service label for a given service ID."""
     if not service_id:
         return "Unknown Service"
-
+        
     try:
         service_url = f"{BASE_URL}/api/application-monitoring/metrics/services"
         payload = {
@@ -159,19 +214,19 @@ async def get_service_label(service_id: str, timestamp: int) -> str:
                 "windowSize": 3600000  # 1 hour in milliseconds
             }
         }
-
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(service_url, json=payload, headers=HEADERS, timeout=10.0)
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(service_url, json=payload, headers=HEADERS)
             response.raise_for_status()
             data = response.json()
-
+            
             items = data.get("items", [])
             if items and "service" in items[0] and "label" in items[0]["service"]:
                 return items[0]["service"]["label"]
-
+                
             logger.warning(f"No service label found for service_id={service_id}")
             return "Unknown Service"
-
+            
     except Exception as e:
         logger.error(f"Error fetching service label for {service_id}: {str(e)}")
         return "Unknown Service"
@@ -180,11 +235,11 @@ async def get_infrastructure_label(snapshot_id: str, plugin_id: str, timestamp: 
     """Fetch infrastructure label for a given snapshot ID."""
     if not snapshot_id:
         return "Unknown Infrastructure"
-
+        
     try:
         # Determine the tag filter name based on the plugin_id
         tag_filter_name = "id.host"  # Default
-
+        
         if plugin_id:
             if "host" in plugin_id.lower():
                 tag_filter_name = "id.host"
@@ -192,7 +247,7 @@ async def get_infrastructure_label(snapshot_id: str, plugin_id: str, timestamp: 
                 tag_filter_name = "id.process"
             elif "opentelemetry" in plugin_id.lower():
                 tag_filter_name = "id.otel"
-
+        
         infrastructure_url = f"{BASE_URL}/api/infrastructure-monitoring/analyze/entities"
         payload = {
             "tagFilterExpression": {
@@ -210,25 +265,25 @@ async def get_infrastructure_label(snapshot_id: str, plugin_id: str, timestamp: 
                 "retrievalSize": 200
             }
         }
-
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(infrastructure_url, json=payload, headers=HEADERS, timeout=10.0)
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(infrastructure_url, json=payload, headers=HEADERS)
             response.raise_for_status()
             data = response.json()
-
+            
             items = data.get("items", [])
             if items:
                 # Find the item with matching snapshot ID
                 for item in items:
                     if item.get("snapshotId") == snapshot_id:
                         return item.get("label", "Unknown Infrastructure")
-
+                
                 # If no exact match found, return the first item's label
                 return items[0].get("label", "Unknown Infrastructure")
-
+            
             logger.warning(f"No infrastructure details found for snapshot_id={snapshot_id}")
             return "Unknown Infrastructure"
-
+            
     except Exception as e:
         logger.error(f"Error fetching infrastructure label for {snapshot_id}: {str(e)}")
         return "Unknown Infrastructure"
@@ -237,7 +292,7 @@ def get_plugin_type(plugin_id: str) -> str:
     """Determine the plugin type from the plugin ID."""
     if not plugin_id:
         return "unknown"
-
+        
     if "endpoint" in plugin_id.lower():
         return "endpoint"
     elif "service" in plugin_id.lower():
@@ -248,56 +303,36 @@ def get_plugin_type(plugin_id: str) -> str:
         return "unknown"
 
 async def trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
-    """Trigger remediation API for one incident with timeout protection."""
-    # Set a timeout for the entire function
-    try:
-        return await asyncio.wait_for(
-            _trigger_remediation(incident),
-            timeout=30.0  # 30 second timeout for the entire function
-        )
-    except asyncio.TimeoutError:
-        event_id = incident.get("eventId", "unknown")
-        entity_label = incident.get("entityLabel", "unknown")
-        logger.error(f"Timeout occurred while processing incident {event_id}")
-        return {
-            "incident_id": event_id,
-            "entity_label": entity_label,
-            "status_code": 0,
-            "error": "Timeout occurred while processing incident"
-        }
-
-async def _trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
-    """Internal implementation of trigger_remediation."""
+    """Trigger remediation API for one incident."""
     event_id = incident.get("eventId")
     entity_label = incident.get("entityLabel")
-
+    event_entity_type = incident.get("entityType")
     # Fetch event specification info
     event_spec_id = incident.get("eventSpecificationId")
     event_spec_info = ""
-    event_entity_type = ""
-
+    
+    
     if event_spec_id:
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                spec_response = await client.post(
-                    f"{BASE_URL}/api/events/settings/event-specifications/infos",
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                spec_response = await client.get(
+                    f"{BASE_URL}/api/events/settings/application-alert-configs/{event_spec_id}",
                     headers=HEADERS,
-                    json=[event_spec_id],
-                    timeout=10.0
+                   
                 )
                 spec_response.raise_for_status()
-
+                
                 response_data = spec_response.json()
-                event_spec_info = response_data[0].get("description", "") if response_data else ""
-                event_entity_type = response_data[0].get("entityType", "") if response_data else ""
-
+                event_spec_info = response_data.get("description", "") if response_data else ""
+                #event_entity_type = response_data[0].get("entityType", "") if response_data else ""
+                
                 # Format entity type with proper capitalization (Infrastructure instead of INFRASTRUCTURE)
                 if event_entity_type:
                     event_entity_type = event_entity_type.capitalize()
                 logger.info(f"Fetched event specification info for {event_id}")
         except Exception as e:
             logger.error(f"Error fetching event specification info for {event_id}: {str(e)}")
-
+    
     # Create post body with updated structure
     post_body = {
         "eventId": event_id,
@@ -306,46 +341,57 @@ async def _trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
         "eventDescription": f"Event {incident.get('problem')} with description {event_spec_info}"
     }
 
+    # Initialize first_response and additional_responses
+    first_response = {
+        "incident_id": incident_id,
+        "event_id": event_id,
+        "entity_label": entity_label,
+        "request_body": post_body
+    }
+    additional_responses = []
+    
+    # Make first API call
     try:
-        # First API call with original payload
-        async with httpx.AsyncClient(timeout=15.0) as client:  # Reduced timeout
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 ACTION_GENERATION_URL,
                 headers=HEADERS,
-                json=post_body,
-                timeout=10.0  # Explicit timeout for this request
+                json=post_body
             )
             response.raise_for_status()
             logger.info(f"Success for first API call: {event_id}")
-
-            first_response = {
-                "incident_id": event_id,
-                "entity_label": entity_label,
+            
+            first_response.update({
                 "status_code": response.status_code,
-                "request_body": post_body,
                 "response": response.json() if response.text else {}
-            }
-
-        # Process probable causes and make additional API calls
-        probable_cause = incident.get("probableCause", {})
-        current_root_causes = probable_cause.get("currentRootCause", [])
-
-        additional_responses = []
-
-        for root_cause in current_root_causes:
+            })
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error for first API call {event_id}: {repr(e)}")
+        first_response.update({
+            "status_code": 0,
+            "error": str(e)
+        })
+    
+    # Process probable causes and make additional API calls regardless of first call's success
+    probable_cause = incident.get("probableCause", {})
+    current_root_causes = probable_cause.get("currentRootCause", [])
+    
+    # Process each root cause
+    for root_cause in current_root_causes:
+        try:
             entity_id = root_cause.get("entityID", {})
             plugin_id = entity_id.get("pluginId", "")
-
+            
             # Get timestamp from the root cause or use current time as fallback
             timestamp = root_cause.get("timestamp", int(time.time() * 1000))
-
+            
             # Determine plugin type
             plugin_type = get_plugin_type(plugin_id)
-
+            
             # Get label based on plugin type
             label = "Unknown"
             entity_id_value = ""
-
+            
             if plugin_type == "endpoint":
                 steady_id = entity_id.get("steadyId", "")
                 label = await get_endpoint_label(steady_id, timestamp)
@@ -361,41 +407,41 @@ async def _trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
                     if "relevantSnapshotID" in item:
                         snapshot_id = item.get("relevantSnapshotID")
                         break
-
+                        
                 if not snapshot_id:
                     # If not found in explainability, check if it's directly in the cause
                     snapshot_id = root_cause.get("snapshotId")
-
+                    
                 if snapshot_id:
                     label = await get_infrastructure_label(snapshot_id, plugin_id, timestamp)
                     entity_id_value = snapshot_id
-
+            
             # Create payload for additional API call
             entity_type = plugin_type.capitalize()
             diagnosis_context = plugin_type
-
+            
             # Special case for infrastructure plugin with process in pluginID
             if plugin_type == "infrastructure" and plugin_id and "process" in plugin_id.lower():
                 entity_type = "Process"
                 diagnosis_context = "process"
-
+                
             additional_payload = {
                 "eventId": event_id,
                 "eventDiagnosis": f"Higher than expected error rate going through {label} in {diagnosis_context}",
                 "eventEntityType": entity_type
             }
-
+            
+            # Make additional API call
             try:
-                async with httpx.AsyncClient(timeout=15.0) as client:  # Reduced timeout
+                async with httpx.AsyncClient(timeout=30.0) as client:
                     additional_response = await client.post(
                         ACTION_GENERATION_URL,
                         headers=HEADERS,
-                        json=additional_payload,
-                        timeout=10.0  # Explicit timeout for this request
+                        json=additional_payload
                     )
                     additional_response.raise_for_status()
                     logger.info(f"Success for additional API call for {plugin_type} {entity_id_value}")
-
+                    
                     additional_responses.append({
                         "plugin_type": plugin_type,
                         "entity_id": entity_id_value,
@@ -414,90 +460,56 @@ async def _trigger_remediation(incident: Dict[str, Any]) -> Dict[str, Any]:
                     "request_body": additional_payload,
                     "error": str(e)
                 })
-
-        # Combine all responses
-        return {
-            **first_response,
-            "additional_responses": additional_responses
-        }
-
-    except httpx.HTTPError as e:
-        logger.error(f"HTTP error for {event_id}: {repr(e)}")
-        return {
-            "incident_id": event_id,
-            "entity_label": entity_label,
-            "status_code": 0,
-            "request_body": post_body,
-            "error": str(e)
-        }
+        except Exception as e:
+            # Catch any other exceptions that might occur during processing a root cause
+            logger.error(f"Error processing root cause: {str(e)}")
+            additional_responses.append({
+                "error": f"Failed to process root cause: {str(e)}"
+            })
+    
+    # Combine all responses
+    return {
+        **first_response,
+        "additional_responses": additional_responses
+    }
 
 
 def save_results(results: List[Dict[str, Any]]) -> None:
     """Save results to JSON file."""
+    # Create output data structure for AWX artifacts
+    output_data = {
+        "total_incidents": len(results),
+        "prc_incidents": len(results),
+        "processed_incidents": len(results),
+        "results": results,
+        "status": "success" if results else "no_incidents_found"
+    }
+    
+    # Save to file
     with open(OUTPUT_FILE_PATH, "w") as f:
-        json.dump(results, f, indent=4)
+        json.dump(output_data, f, indent=4)
     logger.info(f"Results saved to {OUTPUT_FILE_PATH}")
+    
+    # Also print summary to stdout for AWX logs
+    print(f"Processed {len(results)} incidents with probable root causes")
+    if results:
+        print(f"Results saved to {OUTPUT_FILE_PATH}")
+    else:
+        print("No matching incidents found")
 
 
 # === Main Runner ===
-
 async def main():
-    """
-    Main entry point for CLI execution.
-    Fetches and processes PRC incidents, then saves remediation actions to a file.
-    """
-    try:
-        logger.info("Starting remediation process")
-        
-        # Fetch incidents
-        try:
-            incidents = await fetch_incidents()
-            logger.info(f"Fetched {len(incidents)} incidents")
-        except Exception as e:
-            logger.error(f"Failed to fetch incidents: {str(e)}")
-            return {"error": f"Failed to fetch incidents: {str(e)}"}
-        
-        # Filter to PRC incidents
-        prc_incidents = filter_prc_incidents(incidents)
-        logger.info(f"Found {len(prc_incidents)} PRC incidents")
-        
-        if not prc_incidents:
-            logger.info("No PRC incidents found, nothing to process")
-            save_results([])
-            return []
+    incidents = await fetch_incidents()
+    prc_incidents = filter_prc_incidents(incidents, incident_id)
 
-        # Process incidents concurrently with a limit to avoid overwhelming the API
-        # Use a semaphore to limit concurrent API calls
-        semaphore = asyncio.Semaphore(3)  # Allow 3 concurrent API calls
-        
-        async def process_with_semaphore(incident):
-            try:
-                async with semaphore:
-                    return await trigger_remediation(incident)
-            except Exception as e:
-                event_id = incident.get("eventId", "unknown")
-                logger.error(f"Error processing incident {event_id}: {str(e)}")
-                return {
-                    "incident_id": event_id,
-                    "entity_label": incident.get("entityLabel", "unknown"),
-                    "status_code": 0,
-                    "error": f"Error processing incident: {str(e)}"
-                }
-        
-        # Process all incidents concurrently with the semaphore
-        results = await asyncio.gather(
-            *[process_with_semaphore(inc) for inc in prc_incidents]
-        )
+    results = []
+    for inc in prc_incidents:
+        res = await trigger_remediation(inc)
+        results.append(res)
 
-        # Save results to file
-        save_results(results)
-        logger.info(f"Remediation process completed successfully for {len(results)} incidents")
-        
-        return results
-    except Exception as e:
-        logger.exception(f"Error in main function: {e}")
-        save_results([{"error": str(e)}])
-        return {"error": str(e)}
+    save_results(results)
+    return results
 
 
 # === API Endpoints ===
@@ -532,23 +544,15 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
     try:
         # Run the main function
         results = await main()
-
-        # Ensure results is a list
-        if isinstance(results, dict) and "error" in results:
-            results_list = [results]
-        elif isinstance(results, list):
-            results_list = results
-        else:
-            results_list = [{"error": "Unknown result format"}]
-
+        
         # Count incidents
-        incidents_count = len(results_list)
-
+        incidents_count = len(results) if results else 0
+        
         return RemediationResponse(
             total_incidents=incidents_count,
             prc_incidents=incidents_count,
             processed_incidents=incidents_count,
-            results=results_list
+            results=results
         )
     except Exception as e:
         logger.error(f"Error in trigger endpoint: {str(e)}")
@@ -558,8 +562,23 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
         )
 
 
+# === Main Entry Point ===
 if __name__ == "__main__":
-    # Run in CLI mode by default
-    asyncio.run(main())
+    # Check if running in AWX environment
+    if os.environ.get("AWX_EXECUTION") or os.environ.get("INSTANA_API_TOKEN"):
+        # When run in AWX, just process the data and exit
+        asyncio.run(main())
+    else:
+        # When run as a standalone service, start the FastAPI server
+        import uvicorn
+        
+        # Configure uvicorn server
+        uvicorn.run(
+            "remediation_trigger:app", 
+            host="127.0.0.1", 
+            port=8017, 
+            reload=True,
+            log_level="info"
+        )
 
 
