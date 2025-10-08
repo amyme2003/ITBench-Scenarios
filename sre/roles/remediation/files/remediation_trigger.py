@@ -74,9 +74,6 @@ app = FastAPI(
 
 # === Pydantic Models ===
 class RemediationResponse(BaseModel):
-    total_incidents: int
-    prc_incidents: int
-    processed_incidents: int
     results: List[Dict[str, Any]]
 
 # === API Calls ===
@@ -549,9 +546,6 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
         incidents_count = len(results) if results else 0
         
         return RemediationResponse(
-            total_incidents=incidents_count,
-            prc_incidents=incidents_count,
-            processed_incidents=incidents_count,
             results=results
         )
     except Exception as e:
