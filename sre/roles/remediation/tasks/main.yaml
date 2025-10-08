@@ -31,17 +31,17 @@
     state: directory
     mode: '0755'
 
-- name: Run Remediation script with virtual environment (with timeout)
+- name: Run Remediation script with virtual environment
   ansible.builtin.shell:
-    cmd: "timeout 60 {{ role_path }}/venv/bin/python {{ role_path }}/files/remediation_trigger.py"
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/remediation_trigger.py"
   args:
     executable: /bin/bash
   environment: "{{ instana_env }}"
   register: remediation_script_output
   changed_when: false
   ignore_errors: true
-  async: 120  # Run the task asynchronously with a 2-minute timeout
-  poll: 10    # Check every 10 seconds
+  # Increase timeout for API calls
+  timeout: 300
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:

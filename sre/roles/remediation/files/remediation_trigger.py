@@ -562,21 +562,58 @@ async def trigger_remediation_endpoint(background_tasks: BackgroundTasks):
         )
 
 
+# Function to process data and exit
+async def process_data_and_exit():
+    """Process the data and exit without starting the web server"""
+    try:
+        # Fetch and process incidents
+        incidents = await fetch_incidents()
+        prc_incidents = filter_prc_incidents(incidents, incident_id)
+
+        results = []
+        for inc in prc_incidents:
+            res = await trigger_remediation(inc)
+            results.append(res)
+
+        save_results(results)
+        
+        # Print output for AWX to capture
+        output_data = {
+            "total_incidents": len(results),
+            "prc_incidents": len(results),
+            "processed_incidents": len(results),
+            "results": results,
+            "status": "success" if results else "no_incidents_found"
+        }
+        print(json.dumps(output_data))
+        
+        logger.info("Data processing completed successfully")
+        
+    except Exception as e:
+        logger.exception(f"Error processing data: {e}")
+        # Print error for AWX to capture
+        error_data = {
+            "status": "error",
+            "message": str(e)
+        }
+        print(json.dumps(error_data))
+        raise
+
 # === Main Entry Point ===
 if __name__ == "__main__":
     # Check if running in AWX environment
     if os.environ.get("AWX_EXECUTION") or os.environ.get("INSTANA_API_TOKEN"):
         # When run in AWX, just process the data and exit
-        asyncio.run(main())
+        asyncio.run(process_data_and_exit())
     else:
         # When run as a standalone service, start the FastAPI server
         import uvicorn
         
         # Configure uvicorn server
         uvicorn.run(
-            "remediation_trigger:app", 
-            host="127.0.0.1", 
-            port=8017, 
+            "remediation_trigger:app",
+            host="127.0.0.1",
+            port=8017,
             reload=True,
             log_level="info"
         )
