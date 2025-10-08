@@ -573,9 +573,6 @@ async def process_data_and_exit():
         
         # Print output for AWX to capture
         output_data = {
-            "total_incidents": len(results),
-            "prc_incidents": len(results),
-            "processed_incidents": len(results),
             "results": results,
             "status": "success" if results else "no_incidents_found"
         }
