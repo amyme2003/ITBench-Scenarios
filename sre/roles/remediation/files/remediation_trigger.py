@@ -475,9 +475,6 @@ def save_results(results: List[Dict[str, Any]]) -> None:
     """Save results to JSON file."""
     # Create output data structure for AWX artifacts
     output_data = {
-        "total_incidents": len(results),
-        "prc_incidents": len(results),
-        "processed_incidents": len(results),
         "results": results,
         "status": "success" if results else "no_incidents_found"
     }
