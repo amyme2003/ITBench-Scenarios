@@ -13,7 +13,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dotenv import load_dotenv
 
 import httpx
@@ -32,11 +32,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("prc_enrich")
 
-# Get the current environment (default to 'demoeu' if not specified)
-ENVIRONMENT = os.environ.get("INSTANA_ENVIRONMENT", "demoeu").upper()
-
 # API URLs
-BASE_URL = os.environ.get("INSTANA_URL", "https://demoeu-instana.instana.io")
+BASE_URL = "https://demoeu-instana.instana.io"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
@@ -48,8 +45,8 @@ if INCIDENT_ID and INCIDENT_ID.isdigit():
     incident_id = int(INCIDENT_ID)
     logger.info(f"Using incident_id {incident_id} from environment variable")
 else:
-    incident_id = 3  # default
-    logger.info(f"Using default incident_id {incident_id} (environment variable not set or invalid)")
+    incident_id = None  # No default, will show all incidents if not specified
+    logger.info(f"No valid incident_id provided, will show all matching incidents")
 
 # Get API token from environment variable
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
@@ -61,8 +58,8 @@ HEADERS = {
 }
 
 # Output configuration
-# Save to current working directory - use prc_output.json to match what the Ansible role expects
-OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_output.json")
+# Save to current working directory
+OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), "prc_all.json")
 
 # Time window for metrics queries (1 hour in milliseconds)
 METRICS_WINDOW_SIZE = 3600000
@@ -365,12 +362,12 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
-    #Modified_url = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
     
     logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")
     
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
+        response = await client.get(Modified_url, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
@@ -405,7 +402,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
     
     # Apply different filtering criteria based on incident_id
     if incident_id == 23:
-        # Filtering criteria for incident_id 23
+        # Filtering criteria for incident_id 3
         filtered = [
             incident for incident in incidents_data
             if incident.get("type") == "incident"
@@ -415,7 +412,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             and incident.get("problem","").startswith("Alert on all services")
         ]
     elif incident_id == 3:
-        # Filtering criteria for incident_id 3
+        # Filtering criteria for incident_id 23
         filtered = [
             incident for incident in incidents_data
             if incident.get("type") == "incident"
@@ -424,15 +421,23 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             and incident.get("problem","").startswith("Alert on all services")
         ]
     else:
-        # Default filtering criteria for other incident_ids or when no specific id is provided
-        filtered = [
-            incident for incident in incidents_data
-            if incident.get("type") == "incident"
-            and incident.get("probableCause", {}).get("found") is True
-            
-        ]
+        # Check if incident_id is provided but not valid
+        if incident_id is not None and not any(incident.get("incidentId") == incident_id for incident in incidents_data):
+            logger.warning(f"Invalid incident_id: {incident_id}. No matching incident found.")
+            print(f"Invalid incident_id: {incident_id}. No matching incident found.")
+            filtered = []  # Return empty list for invalid incident_id
+        else:
+            # Default filtering criteria for other incident_ids or when no specific id is provided
+            filtered = []
+            #Invalid incident_id message here
     
     logger.info(f"After filtering: {len(filtered)} PRC incidents")
+    
+    # Check if no incidents were found after filtering
+    if len(filtered) == 0:
+        logger.info("No incidents found after filtering.")
+        print("No incidents found after filtering.")
+    
     return filtered
 
 
@@ -668,6 +673,23 @@ async def fetch_prc_details():
         prc_incidents = filter_prc_incidents(incidents_data, incident_id)
         logger.info(f"Found {len(prc_incidents)} PRC incidents")
 
+        # Check if no incidents were found after filtering
+        if not prc_incidents:
+            # Create an empty response with error message
+            empty_response = {
+                "error": "No incidents fetched",
+                "message": f"Invalid incident ID: {incident_id}" if incident_id is not None else "No incidents matched the filtering criteria"
+            }
+            
+            # Log the message
+            logger.info("No incidents found after filtering.")
+            print("No incidents found after filtering.")
+            
+            # Save empty response to file
+            save_output_to_file(empty_response, OUTPUT_FILE_PATH)
+            
+            return empty_response
+
         # Process all incidents concurrently
         results = await asyncio.gather(
             *[process_incident(incident) for incident in prc_incidents]
@@ -715,6 +737,19 @@ async def process_data_and_exit():
         prc_incidents = filter_prc_incidents(incidents_data, incident_id)
         logger.info(f"Found {len(prc_incidents)} PRC incidents")
 
+        # Check if no incidents were found after filtering
+        if not prc_incidents:
+            # Create an empty response with error message
+            empty_response = {
+                "error": "No incidents fetched",
+                "message": f"Invalid incident ID: {incident_id}" if incident_id is not None else "No incidents matched the filtering criteria"
+            }
+            
+            # Save empty response to file
+            save_output_to_file(empty_response, OUTPUT_FILE_PATH)
+            logger.info("No incidents found after filtering. Saved empty response.")
+            return
+            
         # Process all incidents concurrently
         results = await asyncio.gather(
             *[process_incident(incident) for incident in prc_incidents]
@@ -731,6 +766,12 @@ async def process_data_and_exit():
         
     except Exception as e:
         logger.exception(f"Error processing data: {e}")
+        # Save error response to file
+        error_response = {
+            "error": "Processing error",
+            "message": str(e)
+        }
+        save_output_to_file(error_response, OUTPUT_FILE_PATH)
         raise
 
 

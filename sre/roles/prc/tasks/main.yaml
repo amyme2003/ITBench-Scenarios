@@ -44,12 +44,12 @@
 
 - name: Check if output JSON file exists
   ansible.builtin.stat:
-    path: "{{ role_path }}/files/prc_output.json"
+    path: "{{ role_path }}/files/prc_all.json"
   register: prc_json_file
 
 - name: Read PRC JSON output
   ansible.builtin.slurp:
-    src: "{{ role_path }}/files/prc_output.json"
+    src: "{{ role_path }}/files/prc_all.json"
   register: prc_json_content
   when: prc_json_file.stat.exists
 
@@ -72,4 +72,4 @@
       prc_data: "{{ prc_data }}"
     per_host: false
 
-# 
+
