@@ -25,5 +25,7 @@
       vars:
         instana_api_token: "{{ instana_api_token }}"
         prc_incident_id: "{{ incident_id }}"
+      tags:
+        - manage_prc
 
 
