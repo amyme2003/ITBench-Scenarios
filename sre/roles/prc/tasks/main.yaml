@@ -16,7 +16,7 @@
 - name: Set environment variables for Instana API token and incident ID
   ansible.builtin.set_fact:
     instana_env:
-      INSTANA_API_TOKEN: "{{ instana_api_token }}"
+      INSTANA_API_TOKEN: "{{ instana_api_token | replace('\"', '') }}"
       INCIDENT_ID: "{{ prc_incident_id | default('') }}"
 
 - name: Ensure the PRC enrichment script has execute permissions
