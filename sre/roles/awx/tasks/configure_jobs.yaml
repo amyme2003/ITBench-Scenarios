@@ -155,7 +155,7 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+      instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
     inventory: ITBench
     job_tags: manage_prc
     job_type: run
@@ -176,7 +176,7 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+      instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
     inventory: ITBench
     job_tags: manage_remediation
     job_type: run

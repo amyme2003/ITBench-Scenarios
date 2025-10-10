@@ -34,12 +34,12 @@
           bucket: "{{ storage.s3.bucket | default('') }}"
           endpoint: "{{ storage.s3.endpoint | default('') }}"
           directory: "{{ awx_agent.version }}/{{ awx_generated_uuid.stdout }}/{{ incident | string }}"
-      instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+      instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
     extra_vars_local:
       storage:
         local:
           directory: "{{ storage.local.directory }}/{{ awx_agent.version }}/{{ awx_generated_uuid.stdout }}/{{ incident | string }}"
-      instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+      instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
   loop: "{{ awx_experiments.scenarios }}"
   loop_control:
     loop_var: incident
