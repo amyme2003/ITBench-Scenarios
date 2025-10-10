@@ -241,3 +241,105 @@
           success_nodes: []
           failure_nodes: []
           always_nodes: []
+
+- name: Create ITBench simplified workflow
+  awx.awx.workflow_job_template:
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    inventory: ITBench
+    name: "ITBench-Workflow-{{ incident }}"
+    state: present
+    workflow_nodes:
+      # First node - Deploy Tools
+      - identifier: node-deploy-tools
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Deploy-Tools"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-deploy-applications
+          failure_nodes: []
+          always_nodes: []
+      
+      # Second node - Deploy Applications
+      - identifier: node-deploy-applications
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Deploy-Applications"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-inject-faults
+          failure_nodes: []
+          always_nodes: []
+      
+      # Third node - Inject Faults
+      - identifier: node-inject-faults
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Inject-Faults"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-manage-prc
+            - identifier: node-manage-remediation
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 1 - PRC Management
+      - identifier: node-manage-prc
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-PRC"
+          type: job_template
+        extra_data:
+          instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-remove-faults
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 2 - Remediation Management
+      - identifier: node-manage-remediation
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-Remediation"
+          type: job_template
+        extra_data:
+          instana_api_token: "{{ awx_credentials.instana.api_token | default('') }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-remove-faults
+          failure_nodes: []
+          always_nodes: []
+      
+      # Converge - Remove Faults
+      - identifier: node-remove-faults
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Remove-Faults"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-undeploy-applications
+          failure_nodes: []
+          always_nodes: []
+      
+      # Undeploy Applications
+      - identifier: node-undeploy-applications
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Undeploy-Applications"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-undeploy-tools
+          failure_nodes: []
+          always_nodes: []
+      
+      # Final node - Undeploy Tools
+      - identifier: node-undeploy-tools
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Undeploy-Tools"
+          type: job_template
+        related:
+          success_nodes: []
+          failure_nodes: []
+          always_nodes: []
