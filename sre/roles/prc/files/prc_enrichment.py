@@ -2,9 +2,9 @@
 """
 PRC Enrichment - pluginId- Type ENDPOINT, SERVICE, or INFRASTRUCTURE
 
-This service fetches incident data with probable root causes (PRC) and enriches it
-with endpoint, service, and infrastructure labels.
-Please note taking into account pluginId of type Endpoint, Service, and Infrastructure
+This service fetches incident data with probable root causes (P
+
+# Made with Bob
 Includes metrics and tags directly in the main entity object for infrastructure plugins with related info of other snapshotIds
 """
 
@@ -357,11 +357,12 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         httpx.HTTPError: If there's an HTTP error
     """
     # Calculate time parameters for the last 24 hours
-    #to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
+   #to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
     #window_size = 3600000   # last 1 hours in milliseconds
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
+    #Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
     #Incident3_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
     #Incident23_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758141000000&to=1758313799000"
     #logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")

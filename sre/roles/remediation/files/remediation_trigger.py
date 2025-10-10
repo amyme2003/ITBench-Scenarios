@@ -45,6 +45,12 @@ ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
 if not API_TOKEN:
     raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
+
+# Remove surrounding quotes if present (the token should be passed with quotes)
+if API_TOKEN.startswith('"') and API_TOKEN.endswith('"'):
+    API_TOKEN = API_TOKEN[1:-1]
+    logger.info("Removed surrounding quotes from API token")
+
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
     "Content-Type": "application/json"
