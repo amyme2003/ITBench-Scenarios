@@ -292,7 +292,7 @@
           name: "Scenario-{{ incident }}--Manage-PRC"
           type: job_template
         extra_data:
-          instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
+          instana_api_token: "\"{{ awx_credentials.instana.api_token | default('') }}\"" # pragma: allowlist secret
         related:
           success_nodes:
             - identifier: node-remove-faults
@@ -305,7 +305,7 @@
           name: "Scenario-{{ incident }}--Manage-Remediation"
           type: job_template
         extra_data:
-          instana_api_token: '"{{ awx_credentials.instana.api_token | default('') }}"' # pragma: allowlist secret
+          instana_api_token: "\"{{ awx_credentials.instana.api_token | default('') }}\"" # pragma: allowlist secret
         related:
           success_nodes:
             - identifier: node-remove-faults
