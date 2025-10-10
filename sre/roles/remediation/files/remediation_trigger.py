@@ -16,7 +16,7 @@ from typing import Dict, List, Any, Optional
 import os
 import httpx
 import uvicorn
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks 
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -37,7 +37,7 @@ logging.basicConfig(
 )
 
 # API URLs
-BASE_URL = "https://demoeu-instana.instana.io"
+BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 
@@ -86,10 +86,11 @@ async def fetch_incidents() -> List[Dict[str, Any]]:
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
-    Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    #Incident3_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    #Incident23_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758141000000&to=1758313799000"
     #logger.info(f"Fetching incidents with a 18sep to 19sep window (to={to_timestamp}, windowSize={window_size})")
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(Modified_url, headers=HEADERS)
+        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
 
@@ -243,7 +244,7 @@ async def get_infrastructure_label(snapshot_id: str, plugin_id: str, timestamp: 
             elif "process" in plugin_id.lower():
                 tag_filter_name = "id.process"
             elif "opentelemetry" in plugin_id.lower():
-                tag_filter_name = "id.otel"
+                tag_filter_name = "id.openTelemetry"
         
         infrastructure_url = f"{BASE_URL}/api/infrastructure-monitoring/analyze/entities"
         payload = {

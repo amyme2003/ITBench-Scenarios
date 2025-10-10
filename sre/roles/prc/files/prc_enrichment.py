@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger("prc_enrich")
 
 # API URLs
-BASE_URL = "https://demoeu-instana.instana.io"
+BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
@@ -205,7 +205,7 @@ async def get_infrastructure_details(snapshot_id: str, to_timestamp: int, plugin
             elif "process" in pluginId:
                 tag_filter_name = "id.process"
             elif "opentelemetry" in pluginId:
-                tag_filter_name = "id.otel"
+                tag_filter_name = "id.openTelemetry"
             else:
                 # If no specific pattern is matched, log a warning and use a fallback
                 logger.warning(f"Unknown pluginId pattern: {pluginId}, using default tag filter")
@@ -357,17 +357,17 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         httpx.HTTPError: If there's an HTTP error
     """
     # Calculate time parameters for the last 24 hours
-    to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
-    window_size = 3600000   # last 1 hours in milliseconds
+    #to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
+    #window_size = 3600000   # last 1 hours in milliseconds
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
-    Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
-    
-    logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")
+    #Incident3_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
+    #Incident23_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758141000000&to=1758313799000"
+    #logger.info(f"Fetching incidents with a 1-hour window (to={to_timestamp}, windowSize={window_size})")
     
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(Modified_url, headers=HEADERS)
+        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
