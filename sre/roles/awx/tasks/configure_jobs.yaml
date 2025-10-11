@@ -104,6 +104,20 @@
     project: GitHub-ITBench
     state: present
 
+- name: Add job template for wait period
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: "ITBench-Custom-EE"
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Wait-Period"
+    organization: ITBench
+    playbook: sre/playbooks/wait_period.yaml
+    project: GitHub-ITBench
+    state: present
+
 - name: Add job template for uninstalling applications
   awx.awx.job_template:
     controller_host: "{{ awx_controller_host }}"
@@ -474,7 +488,7 @@
       incident_id: "{{ incident }}"
       base_url: "{{ awx_credentials.instana.base_url }}"
       application_id: "{{ awx_credentials.instana.application_id }}"
-      api_token: "{{ awx_credentials.instana.api_token }}"
+      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Enable-Alerts"
@@ -496,7 +510,7 @@
       incident_id: "{{ incident }}"
       base_url: "{{ awx_credentials.instana.base_url }}"
       application_id: "{{ awx_credentials.instana.application_id }}"
-      api_token: "{{ awx_credentials.instana.api_token }}"
+      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Disable-Alerts"
