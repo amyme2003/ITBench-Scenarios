@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 
 # API URLs
-BASE_URL = "https://demoeu-instana.instana.io"
+BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 REC_ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/match"
 
