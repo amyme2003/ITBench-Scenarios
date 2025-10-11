@@ -55,6 +55,12 @@ argument_specs:
               api_token:
                 required: true
                 type: str
+              base_url:
+                required: false
+                type: str
+              application_id:
+                required: false
+                type: str
       awx_experiments:
         required: true
         type: dict
