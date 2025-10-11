@@ -1,0 +1,30 @@
+---
+- name: Manage Alerts - Enable Disabled Alerts
+  hosts:
+    - environment
+  gather_facts: true
+  
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - credentials.instana.base_url is defined
+          - credentials.instana.application_id is defined
+          - credentials.instana.api_token is defined
+        fail_msg: "Instana credentials (base_url, application_id, and api_token) are required in credentials.yaml."
+        success_msg: "All required Instana credentials are defined"
+      tags:
+        - always
+  
+  tasks:
+    - name: Import alerts role
+      ansible.builtin.import_role:
+        name: ../roles/alerts
+      vars:
+        base_url: "{{ credentials.instana.base_url }}"
+        application_id: "{{ credentials.instana.application_id }}"
+        api_token: "{{ credentials.instana.api_token }}"
+      tags:
+        - manage_alerts
+
+

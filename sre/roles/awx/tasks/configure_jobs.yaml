@@ -460,3 +460,22 @@
       agent_analytics_sdk_username: "{{ awx_agent.configuration['agent_analytics_sdk']['git_username'] }}"
       agent_analytics_sdk_token: "{{ awx_agent.configuration['agent_analytics_sdk']['git_token'] }}"
       sre_agent_max_runtime_in_seconds: 900
+
+- name: Add job template for managing alerts
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials:
+      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - AWS
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Manage-Alerts"
+    organization: ITBench
+    playbook: sre/playbooks/manage_enable_alerts.yaml
+    project: GitHub-ITBench
+    state: present

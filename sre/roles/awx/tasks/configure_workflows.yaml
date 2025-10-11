@@ -270,11 +270,22 @@
           type: job_template
         related:
           success_nodes:
+            - identifier: node-manage-alerts
+          failure_nodes: []
+          always_nodes: []
+      
+      # Third node - Manage Alerts
+      - identifier: node-manage-alerts
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-Alerts"
+          type: job_template
+        related:
+          success_nodes:
             - identifier: node-inject-faults
           failure_nodes: []
           always_nodes: []
       
-      # Third node - Inject Faults
+      # Fourth node - Inject Faults
       - identifier: node-inject-faults
         unified_job_template:
           name: "Scenario-{{ incident }}--Inject-Faults"
