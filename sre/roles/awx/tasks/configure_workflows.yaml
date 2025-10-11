@@ -333,6 +333,7 @@
           success_nodes:
             - identifier: node-manage-prc
             - identifier: node-manage-remediation
+            - identifier: node-manage-recommended-actions
           failure_nodes: []
           always_nodes: []
       
@@ -353,6 +354,19 @@
       - identifier: node-manage-remediation
         unified_job_template:
           name: "Scenario-{{ incident }}--Manage-Remediation"
+          type: job_template
+        extra_data:
+          instana_api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-disable-alerts-final
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 3 - Recommended Actions Management
+      - identifier: node-manage-recommended-actions
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-Recommended-Actions"
           type: job_template
         extra_data:
           instana_api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
@@ -408,3 +422,5 @@
           success_nodes: []
           failure_nodes: []
           always_nodes: []
+
+
