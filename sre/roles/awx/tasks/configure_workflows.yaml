@@ -257,6 +257,10 @@
         unified_job_template:
           name: "Scenario-{{ incident }}--Disable-Alerts"
           type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}"
         related:
           success_nodes:
             - identifier: node-deploy-tools
@@ -290,6 +294,10 @@
         unified_job_template:
           name: "Scenario-{{ incident }}--Enable-Alerts"
           type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}"
         related:
           success_nodes:
             - identifier: node-inject-faults
@@ -339,6 +347,10 @@
         unified_job_template:
           name: "Scenario-{{ incident }}--Disable-Alerts"
           type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}"
         related:
           success_nodes:
             - identifier: node-remove-faults

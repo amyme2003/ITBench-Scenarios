@@ -472,6 +472,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
+      base_url: "{{ awx_credentials.instana.base_url }}"
+      application_id: "{{ awx_credentials.instana.application_id }}"
+      api_token: "{{ awx_credentials.instana.api_token }}"
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Enable-Alerts"
@@ -491,6 +494,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
+      base_url: "{{ awx_credentials.instana.base_url }}"
+      application_id: "{{ awx_credentials.instana.application_id }}"
+      api_token: "{{ awx_credentials.instana.api_token }}"
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Disable-Alerts"
