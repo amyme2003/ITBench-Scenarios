@@ -1,0 +1,19 @@
+---
+argument_specs:
+  main:
+    short_description: Recommended Actions for PRC Incidents
+    description:
+      - This role fetches incident data with probable root causes (PRC) and triggers recommended actions
+      - It sends the incident details to the Recommended AI action generation endpoint
+      - All responses are included regardless of confidence level, and each response is enumerated with an index
+    options:
+      instana_api_token:
+        type: str
+        required: true
+        description: API token for Instana API authentication
+      incident_id:
+        type: int
+        required: false
+        description: Optional incident ID to filter for a specific incident (currently supports 3, 23)
+
+
