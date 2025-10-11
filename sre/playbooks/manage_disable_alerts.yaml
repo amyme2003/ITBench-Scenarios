@@ -22,6 +22,9 @@
         name: ../roles/alerts
       vars:
         operation: "disable"
+        base_url: "{{ base_url }}"
+        application_id: "{{ application_id }}"
+        api_token: "{{ api_token }}"
       tags:
         - manage_alerts
 
