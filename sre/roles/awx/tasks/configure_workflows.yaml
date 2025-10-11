@@ -285,7 +285,7 @@
           type: job_template
         related:
           success_nodes:
-            - identifier: node-manage-alerts
+            - identifier: node-enable-alerts
           failure_nodes: []
           always_nodes: []
       
