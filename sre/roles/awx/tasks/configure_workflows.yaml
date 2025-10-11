@@ -252,7 +252,18 @@
     name: "ITBench-Workflow-{{ incident }}"
     state: present
     workflow_nodes:
-      # First node - Deploy Tools
+      # First node - Disable Alerts
+      - identifier: node-disable-alerts-initial
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Disable-Alerts"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-deploy-tools
+          failure_nodes: []
+          always_nodes: []
+      
+      # Second node - Deploy Tools
       - identifier: node-deploy-tools
         unified_job_template:
           name: "Scenario-{{ incident }}--Deploy-Tools"
@@ -274,10 +285,10 @@
           failure_nodes: []
           always_nodes: []
       
-      # Third node - Manage Alerts
-      - identifier: node-manage-alerts
+      # Third node - Enable Alerts
+      - identifier: node-enable-alerts
         unified_job_template:
-          name: "Scenario-{{ incident }}--Manage-Alerts"
+          name: "Scenario-{{ incident }}--Enable-Alerts"
           type: job_template
         related:
           success_nodes:
@@ -306,7 +317,7 @@
           instana_api_token:  "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
         related:
           success_nodes:
-            - identifier: node-remove-faults
+            - identifier: node-disable-alerts-final
           failure_nodes: []
           always_nodes: []
       
@@ -317,6 +328,17 @@
           type: job_template
         extra_data:
           instana_api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-disable-alerts-final
+          failure_nodes: []
+          always_nodes: []
+      
+      # Converge - Disable Alerts Final
+      - identifier: node-disable-alerts-final
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Disable-Alerts"
+          type: job_template
         related:
           success_nodes:
             - identifier: node-remove-faults

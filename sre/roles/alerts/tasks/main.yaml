@@ -1,6 +1,10 @@
 ---
 # Tasks for Alerts management role
 
+- name: Set default operation if not provided
+  ansible.builtin.set_fact:
+    operation: "{{ operation | default('enable') }}"
+
 - name: Create a virtual environment for alerts management script
   ansible.builtin.shell:
     cmd: "python3 -m venv {{ role_path }}/venv"
@@ -20,12 +24,19 @@
       APPLICATION_ID: "{{ application_id }}"
       TOKEN: "{{ api_token }}"
 
-- name: Ensure the alerts management script has execute permissions
+- name: Ensure the enable alerts script has execute permissions
   ansible.builtin.file:
     path: "{{ role_path }}/files/enable_alerts.py"
     mode: '0755'
+  when: operation == 'enable'
 
-- name: Run alerts management script with virtual environment
+- name: Ensure the disable alerts script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/disable_alerts.py"
+    mode: '0755'
+  when: operation == 'disable'
+
+- name: Run enable alerts script with virtual environment
   ansible.builtin.shell:
     cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/enable_alerts.py"
   args:
@@ -34,6 +45,18 @@
   register: alerts_script_output
   changed_when: false
   ignore_errors: true
+  when: operation == 'enable'
+
+- name: Run disable alerts script with virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/disable_alerts.py"
+  args:
+    executable: /bin/bash
+  environment: "{{ alerts_env }}"
+  register: alerts_script_output
+  changed_when: false
+  ignore_errors: true
+  when: operation == 'disable'
 
 - name: Display script output
   debug:

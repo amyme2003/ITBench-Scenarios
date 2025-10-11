@@ -1,5 +1,5 @@
 ---
-- name: Manage Alerts - Enable Disabled Alerts
+- name: Manage Alerts - Disable Enabled Alerts
   hosts:
     - environment
   gather_facts: true
@@ -21,7 +21,7 @@
       ansible.builtin.import_role:
         name: ../roles/alerts
       vars:
-        operation: "enable"
+        operation: "disable"
         base_url: "{{ credentials.instana.base_url }}"
         application_id: "{{ credentials.instana.application_id }}"
         api_token: "{{ credentials.instana.api_token }}"
