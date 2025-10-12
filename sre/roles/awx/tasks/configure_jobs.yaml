@@ -13,7 +13,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -33,7 +33,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -53,7 +53,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -73,7 +73,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     inventory: ITBench
@@ -90,7 +90,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -124,7 +124,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -144,7 +144,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -164,7 +164,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -185,7 +185,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -206,7 +206,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -227,7 +227,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -247,7 +247,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -267,7 +267,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -288,7 +288,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -309,7 +309,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -333,7 +333,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -372,7 +372,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -392,7 +392,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -412,7 +412,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     inventory: ITBench
@@ -430,7 +430,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     inventory: ITBench
@@ -448,7 +448,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     inventory: ITBench
@@ -502,7 +502,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
@@ -524,7 +524,7 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
       - AWS
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
