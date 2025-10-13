@@ -17,6 +17,7 @@
     argv:
       - "{{ system_kubectl_path.stdout }}"
       - version
+      - --client
       - -o
       - json
   register: system_raw_kubectl_version
@@ -26,10 +27,46 @@
   ansible.builtin.set_fact:
     system_kubectl_version: "{{ system_raw_kubectl_version.stdout | from_json }}"
 
-- name: Parse kubectl version
+- name: Parse kubectl client version
   ansible.builtin.set_fact:
     system_kubectl_client_version: "{{ system_kubectl_version.clientVersion.gitVersion | split('v') | last }}"
-    system_kubectl_server_version: "{{ system_kubectl_version.serverVersion.gitVersion | split('v') | last }}"
+
+- name: Check if kops kubeconfig exists
+  ansible.builtin.stat:
+    path: /tmp/awx-exp-runner-head-aws.k8s.local.yaml
+  register: kops_kubeconfig_file
+  changed_when: false
+
+- name: Try to get kubectl server version with kops kubeconfig
+  ansible.builtin.command:
+    argv:
+      - "{{ system_kubectl_path.stdout }}"
+      - version
+      - -o
+      - json
+      - --kubeconfig
+      - /tmp/awx-exp-runner-head-aws.k8s.local.yaml
+  register: system_raw_kubectl_server_version
+  changed_when: false
+  failed_when: false
+  when: kops_kubeconfig_file.stat.exists
+
+- name: Try to get kubectl server version with default kubeconfig
+  ansible.builtin.command:
+    argv:
+      - "{{ system_kubectl_path.stdout }}"
+      - version
+      - -o
+      - json
+  register: system_raw_kubectl_server_version
+  changed_when: false
+  failed_when: false
+  when: not kops_kubeconfig_file.stat.exists
+
+- name: Set server version facts when server is accessible
+  ansible.builtin.set_fact:
+    system_kubectl_server_version: "{{ (system_raw_kubectl_server_version.stdout | from_json).serverVersion.gitVersion | split('v') | last }}"
+  when: system_raw_kubectl_server_version.rc == 0
 
 - name: Validate kubectl client version
   ansible.builtin.assert:
@@ -42,3 +79,9 @@
     that: "'1.31' is version_compare(system_kubectl_server_version, '<=')"
     fail_msg: kubernetes server version for cluster must be 1.31 or later. Got {{ system_kubectl_server_version }}
     success_msg: kubernetes server version {{ system_kubectl_server_version }} (>= 1.31) is OK.
+  when: system_raw_kubectl_server_version.rc == 0
+
+- name: Display server connection status
+  ansible.builtin.debug:
+    msg: "Kubernetes server connection not available. Only client version was validated."
+  when: system_raw_kubectl_server_version.rc != 0
