@@ -331,6 +331,17 @@
           type: job_template
         related:
           success_nodes:
+            - identifier: node-wait-period-after-fault-injection
+          failure_nodes: []
+          always_nodes: []
+          
+      # Wait Period after Fault Injection
+      - identifier: node-wait-period-after-fault-injection
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Wait-Period"
+          type: job_template
+        related:
+          success_nodes:
             - identifier: node-manage-prc
             - identifier: node-manage-remediation
             - identifier: node-manage-recommended-actions
