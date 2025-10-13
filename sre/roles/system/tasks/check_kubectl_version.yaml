@@ -19,7 +19,6 @@
       - version
       - -o
       - json
-      - --kubeconfig={{ system_cluster.kubeconfig | ansible.builtin.expanduser }}
   register: system_raw_kubectl_version
   changed_when: false
 
@@ -40,6 +39,6 @@
 
 - name: Validate kubectl server version
   ansible.builtin.assert:
-    that: "'1.32' is version_compare(system_kubectl_server_version, '<=')"
-    fail_msg: kubernetes server version for cluster must be 1.32 or later. Got {{ system_kubectl_server_version }}
-    success_msg: kubernetes server version {{ system_kubectl_server_version }} (>= 1.32) is OK.
+    that: "'1.31' is version_compare(system_kubectl_server_version, '<=')"
+    fail_msg: kubernetes server version for cluster must be 1.31 or later. Got {{ system_kubectl_server_version }}
+    success_msg: kubernetes server version {{ system_kubectl_server_version }} (>= 1.31) is OK.
