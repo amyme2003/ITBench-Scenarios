@@ -31,9 +31,9 @@
           status: progressing
         leaderboard_storage:
           s3:
-            bucket: "{{ storage.bucket }}"
-            directory: "{{ storage.directory }}"
-            endpoint: "{{ storage.endpoint }}"
+            bucket: "amy-itbench"
+            directory: ""
+            endpoint: "https://s3.us-west-1.amazonaws.com"
 
     - name: Attempt to perform tasks in application role
       block:
@@ -56,9 +56,9 @@
               status: succeeded
             leaderboard_storage:
               s3:
-                bucket: "{{ storage.bucket }}"
-                directory: "{{ storage.directory }}"
-                endpoint: "{{ storage.endpoint }}"
+                bucket: "amy-itbench"
+                directory: ""
+                endpoint: "https://s3.us-west-1.amazonaws.com"
       rescue:
         - name: Import leaderboard role
           ansible.builtin.import_role:
@@ -71,9 +71,9 @@
               status: failed
             leaderboard_storage:
               s3:
-                bucket: "{{ storage.bucket }}"
-                directory: "{{ storage.directory }}"
-                endpoint: "{{ storage.endpoint }}"
+                bucket: "amy-itbench"
+                directory: ""
+                endpoint: "https://s3.us-west-1.amazonaws.com"
 
         - name: Fail playbook
           ansible.builtin.fail:
