@@ -131,6 +131,15 @@ generate_leaderboard_bundle_status: ## Generates a bundle status for Leaderboard
 generate_leaderboard_bundle: ## Generates a bundle of scenarios for the Leaderboard to interface
 	ansible-playbook -i inventory.yaml playbooks/generate_leaderboard_bundle.yaml
 
+.PHONY: launch_itbench_workflow
+launch_itbench_workflow: ## Launches the ITBench simplified workflow
+ifdef INCIDENT_NUMBER
+	ansible-playbook -i inventory.yaml playbooks/manage_awx.yaml --tags "launch_itbench_workflow" \
+		--extra-vars "incident_id=$(INCIDENT_NUMBER)"
+else
+	ansible-playbook -i inventory.yaml playbooks/manage_awx.yaml --tags "launch_itbench_workflow"
+endif
+
 PHONY: fetch_alerts
 fetch_alerts: ## Checks the Prometheus for firing alerts
 	ansible-runner run ./ -p check_for_specific_alerts_in_firing_state.yaml
