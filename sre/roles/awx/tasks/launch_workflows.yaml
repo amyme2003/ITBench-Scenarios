@@ -170,9 +170,17 @@
     - deinit_experiment_workflow
 
 # ITBench Simplified Workflow Section
-- name: Create workflow launch list for ITBench workflow
+- name: Create workflow launch list for ITBench workflow when incident_id is not specified
   ansible.builtin.set_fact:
     awx_experiment_workflows: "{{ awx_experiments.scenarios }}"
+  when: incident_id is not defined
+  tags:
+    - launch_itbench_workflow
+
+- name: Create workflow launch list for ITBench workflow when incident_id is specified
+  ansible.builtin.set_fact:
+    awx_experiment_workflows: ["{{ incident_id }}"]
+  when: incident_id is defined
   tags:
     - launch_itbench_workflow
 
