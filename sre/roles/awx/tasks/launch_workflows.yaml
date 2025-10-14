@@ -16,8 +16,8 @@
     - launch_itbench_workflow
 
 - name: Generate UUID4 for run_uuid
-  ansible.builtin.command:
-    cmd: uuidgen -r
+  ansible.builtin.shell:
+    cmd: python -c "import uuid; print(uuid.uuid4())"
   changed_when: false
   register: awx_generated_uuid
   tags:
