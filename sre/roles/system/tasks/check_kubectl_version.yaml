@@ -66,7 +66,7 @@
 - name: Set server version facts when server is accessible
   ansible.builtin.set_fact:
     system_kubectl_server_version: "{{ (system_raw_kubectl_server_version.stdout | from_json).serverVersion.gitVersion | split('v') | last }}"
-  when: system_raw_kubectl_server_version.rc == 0
+  when: system_raw_kubectl_server_version is succeeded
 
 - name: Validate kubectl client version
   ansible.builtin.assert:
@@ -79,9 +79,9 @@
     that: "'1.31' is version_compare(system_kubectl_server_version, '<=')"
     fail_msg: kubernetes server version for cluster must be 1.31 or later. Got {{ system_kubectl_server_version }}
     success_msg: kubernetes server version {{ system_kubectl_server_version }} (>= 1.31) is OK.
-  when: system_raw_kubectl_server_version.rc == 0
+  when: system_raw_kubectl_server_version is succeeded
 
 - name: Display server connection status
   ansible.builtin.debug:
     msg: "Kubernetes server connection not available. Only client version was validated."
-  when: system_raw_kubectl_server_version.rc != 0
+  when: system_raw_kubectl_server_version is failed
