@@ -23,8 +23,8 @@
       when:
         - incident_id is defined
   tasks:
-    - name: Import leaderboard role
-      ansible.builtin.import_role:
+    - name: Include leaderboard role
+      ansible.builtin.include_role:
         name: leaderboard
       vars:
         leaderboard_status:
