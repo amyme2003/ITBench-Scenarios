@@ -25,5 +25,6 @@
       vars:
         instana_api_token: "{{ instana_api_token }}"
         incident_id: "{{ incident_id | default(omit) }}"
-
+      tags:
+        - manage_remediation
 
