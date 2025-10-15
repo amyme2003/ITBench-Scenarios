@@ -10,7 +10,7 @@
 - name: Set job credentials variable
   ansible.builtin.set_fact:
     awx_job_credentials:
-      - Cluster-{{ incident_index + 1 }}-Kubeconfig
+      - Cluster-1-Kubeconfig
 
 - name: Add AWS credentials to job credentials
   ansible.builtin.set_fact:

@@ -350,6 +350,17 @@
           type: job_template
         related:
           success_nodes:
+            - identifier: node-wait-after-all-branches
+          failure_nodes: []
+          always_nodes: []
+      
+      # Wait period after all branches complete
+      - identifier: node-wait-after-all-branches
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Wait-Period"
+          type: job_template
+        related:
+          success_nodes:
             - identifier: node-disable-alerts-end
           failure_nodes: []
           always_nodes: []
