@@ -67,7 +67,3 @@
   debug:
     msg: "{{ alerts_script_output.stderr_lines | default(['No errors']) }}"
   when: alerts_script_output.stderr is defined and alerts_script_output.stderr != ''
-
-
-
-
