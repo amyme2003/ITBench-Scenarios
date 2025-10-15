@@ -72,7 +72,7 @@
   ansible.builtin.set_stats:
     data:
       alerts_status: "{{ 'success' if (alerts_script_output.rc is defined and alerts_script_output.rc == 0) else 'failed' }}"
-      alerts_output: "{{ alerts_script_output.stdout | default('No output') }}"
+      alerts_output: "{{ alerts_script_output.stdout | default('No alerts needed to be modified') }}"
       alerts_error: "{{ alerts_script_output.stderr | default('') }}"
     per_host: false
 
