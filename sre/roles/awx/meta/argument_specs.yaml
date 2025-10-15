@@ -48,6 +48,19 @@ argument_specs:
               secret_access_key:
                 required: true
                 type: str
+          instana:
+            required: false
+            type: dict
+            options:
+              api_token:
+                required: true
+                type: str
+              base_url:
+                required: false
+                type: str
+              application_id:
+                required: false
+                type: str
       awx_experiments:
         required: true
         type: dict

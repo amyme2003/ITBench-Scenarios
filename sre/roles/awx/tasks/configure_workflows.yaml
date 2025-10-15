@@ -223,3 +223,169 @@
           success_nodes: []
           failure_nodes: []
           always_nodes: []
+
+- name: Create ITBench Simplified Workflow
+  awx.awx.workflow_job_template:
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    inventory: ITBench
+    name: "ITBench-Simplified-Workflow-{{ incident }}"
+    state: present
+    workflow_nodes:
+      # First node: Disable alerts at start
+      - identifier: node-disable-alerts-start
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Disable-Alerts"
+          type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-deploy-tools-simplified
+          failure_nodes: []
+          always_nodes: []
+      
+      # Deploy tools
+      - identifier: node-deploy-tools-simplified
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Deploy-Tools"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-deploy-applications-simplified
+          failure_nodes: []
+          always_nodes: []
+      
+      # Deploy applications
+      - identifier: node-deploy-applications-simplified
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Deploy-Applications"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-enable-alerts
+          failure_nodes: []
+          always_nodes: []
+      
+      # Enable alerts
+      - identifier: node-enable-alerts
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Enable-Alerts"
+          type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-manage-incidents
+          failure_nodes: []
+          always_nodes: []
+      
+      # Manage incidents (inject faults)
+      - identifier: node-manage-incidents
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Inject-Faults"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-wait-period
+          failure_nodes: []
+          always_nodes: []
+      
+      # Wait period - branches out to three parallel paths
+      - identifier: node-wait-period
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Wait-Period"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-manage-prc
+            - identifier: node-manage-remediation
+            - identifier: node-manage-recommended-actions
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 1: PRC Management
+      - identifier: node-manage-prc
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-PRC"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-join-branches
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 2: Remediation
+      - identifier: node-manage-remediation
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-Remediation"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-join-branches
+          failure_nodes: []
+          always_nodes: []
+      
+      # Branch 3: Recommended Actions
+      - identifier: node-manage-recommended-actions
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Manage-Recommended-Actions"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-join-branches
+          failure_nodes: []
+          always_nodes: []
+      
+      # Join node - waits for all branches to complete
+      - identifier: node-join-branches
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Pause"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-disable-alerts-end
+          failure_nodes: []
+          always_nodes: []
+      
+      # Disable alerts at end
+      - identifier: node-disable-alerts-end
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Disable-Alerts"
+          type: job_template
+        extra_data:
+          base_url: "{{ awx_credentials.instana.base_url }}"
+          application_id: "{{ awx_credentials.instana.application_id }}"
+          api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+        related:
+          success_nodes:
+            - identifier: node-undeploy-applications-simplified
+          failure_nodes: []
+          always_nodes: []
+      
+      # Undeploy applications
+      - identifier: node-undeploy-applications-simplified
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Undeploy-Applications"
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: node-undeploy-tools-simplified
+          failure_nodes: []
+          always_nodes: []
+      
+      # Undeploy tools
+      - identifier: node-undeploy-tools-simplified
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Undeploy-Tools"
+          type: job_template
+        related:
+          success_nodes: []
+          failure_nodes: []
+          always_nodes: []

@@ -105,6 +105,20 @@
     project: GitHub-ITBench
     state: present
 
+- name: Add job template for wait period
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: "ITBench-Custom-EE"
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Wait-Period"
+    organization: ITBench
+    playbook: sre/playbooks/wait_period.yaml
+    project: GitHub-ITBench
+    state: present
+
 - name: Add job template for uninstalling applications
   awx.awx.job_template:
     controller_host: "{{ awx_controller_host }}"
@@ -138,6 +152,63 @@
     name: "Scenario-{{ incident }}--Inject-Faults"
     organization: ITBench
     playbook: sre/playbooks/manage_incidents.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for PRC management
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      instana_api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+    inventory: ITBench
+    job_tags: manage_prc
+    job_type: run
+    name: "Scenario-{{ incident }}--Manage-PRC"
+    organization: ITBench
+    playbook: sre/playbooks/manage_prc.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for remediation
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      instana_api_token:  "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+    inventory: ITBench
+    job_tags: manage_remediation
+    job_type: run
+    name: "Scenario-{{ incident }}--Manage-Remediation"
+    organization: ITBench
+    playbook: sre/playbooks/manage_remediation.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for recommended actions
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      instana_api_token:  "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+    inventory: ITBench
+    job_tags: manage_recommended_actions
+    job_type: run
+    name: "Scenario-{{ incident }}--Manage-Recommended-Actions"
+    organization: ITBench
+    playbook: sre/playbooks/manage_recommended_actions.yaml
     project: GitHub-ITBench
     state: present
 
@@ -214,6 +285,28 @@
     job_tags: install_recorders
     job_type: run
     name: "Scenario-{{ incident }}--Run-Topology-Data-Recorder"
+    organization: ITBench
+    playbook: sre/playbooks/manage_recorders.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for uninstalling topology data recorder
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      tools:
+        prometheus: false
+        jaeger: false
+        kubernetes_topology_monitor: true
+    inventory: ITBench
+    job_tags: uninstall_recorders
+    job_type: run
+    name: "Scenario-{{ incident }}--Uninstall-Topology-Data-Recorder"
     organization: ITBench
     playbook: sre/playbooks/manage_recorders.yaml
     project: GitHub-ITBench
@@ -353,3 +446,44 @@
       agent_analytics_sdk_username: "{{ awx_agent.configuration['agent_analytics_sdk']['git_username'] }}"
       agent_analytics_sdk_token: "{{ awx_agent.configuration['agent_analytics_sdk']['git_token'] }}"
       sre_agent_max_runtime_in_seconds: 900
+
+- name: Add job template for enabling alerts
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      base_url: "{{ awx_credentials.instana.base_url }}"
+      application_id: "{{ awx_credentials.instana.application_id }}"
+      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Enable-Alerts"
+    organization: ITBench
+    playbook: sre/playbooks/manage_enable_alerts.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for disabling alerts
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    credentials: "{{ awx_job_credentials }}"
+    execution_environment: "ITBench-Custom-EE"
+    extra_vars:
+      incident_id: "{{ incident }}"
+      base_url: "{{ awx_credentials.instana.base_url }}"
+      application_id: "{{ awx_credentials.instana.application_id }}"
+      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Disable-Alerts"
+    organization: ITBench
+    playbook: sre/playbooks/manage_disable_alerts.yaml
+    project: GitHub-ITBench
+    state: present
+
