@@ -20,8 +20,18 @@
           label: kubeconfig
           secret: true
           multiline: true
+        - id: platform
+          type: string
+          label: platform
+          secret: false
+        - id: provider
+          type: string
+          label: provider
+          secret: false
       required:
         - kubeconfig
+        - platform
+        - provider
     injectors: "{{ lookup('ansible.builtin.file', 'files/credential_type_kubeconfig_injectors.json') }}"
     kind: cloud
     name: Kubeconfig
@@ -45,6 +55,8 @@
     description: Kubeconfig file for a Kubernetes cluster
     inputs:
       kubeconfig: "{{ lookup('ansible.builtin.file', item) }}"
+      platform: "{{ cluster_platform | default('kubernetes') }}"
+      provider: "{{ cluster_provider | default('aws') }}"
     name: Cluster-{{ runner_index + 1 }}-Kubeconfig
     organization: ITBench
   loop: "{{ awx_runners.kubeconfigs }}"

@@ -248,7 +248,7 @@
             - identifier: node-deploy-tools-simplified
           failure_nodes: []
           always_nodes: []
-      
+
       # Deploy tools
       - identifier: node-deploy-tools-simplified
         unified_job_template:
@@ -259,7 +259,7 @@
             - identifier: node-deploy-applications-simplified
           failure_nodes: []
           always_nodes: []
-      
+
       # Deploy applications
       - identifier: node-deploy-applications-simplified
         unified_job_template:
@@ -270,7 +270,7 @@
             - identifier: node-wait-after-deploy
           failure_nodes: []
           always_nodes: []
-      
+
       # Wait period after deploy applications
       - identifier: node-wait-after-deploy
         unified_job_template:
@@ -281,7 +281,7 @@
             - identifier: node-enable-alerts
           failure_nodes: []
           always_nodes: []
-      
+
       # Enable alerts
       - identifier: node-enable-alerts
         unified_job_template:
@@ -296,7 +296,7 @@
             - identifier: node-manage-incidents
           failure_nodes: []
           always_nodes: []
-      
+
       # Manage incidents (inject faults)
       - identifier: node-manage-incidents
         unified_job_template:
@@ -307,7 +307,7 @@
             - identifier: node-wait-period
           failure_nodes: []
           always_nodes: []
-      
+
       # Wait period - branches out to three parallel paths
       - identifier: node-wait-period
         unified_job_template:
@@ -320,7 +320,7 @@
             - identifier: node-manage-recommended-actions
           failure_nodes: []
           always_nodes: []
-      
+
       # Branch 1: PRC Management
       - identifier: node-manage-prc
         unified_job_template:
@@ -331,7 +331,7 @@
             - identifier: node-disable-alerts-end
           failure_nodes: []
           always_nodes: []
-      
+
       # Branch 2: Remediation
       - identifier: node-manage-remediation
         unified_job_template:
@@ -342,7 +342,7 @@
             - identifier: node-disable-alerts-end
           failure_nodes: []
           always_nodes: []
-      
+
       # Branch 3: Recommended Actions
       - identifier: node-manage-recommended-actions
         unified_job_template:
@@ -353,7 +353,7 @@
             - identifier: node-disable-alerts-end
           failure_nodes: []
           always_nodes: []
-      
+
       # Disable alerts at end
       - identifier: node-disable-alerts-end
         unified_job_template:
@@ -368,7 +368,7 @@
             - identifier: node-undeploy-applications-simplified
           failure_nodes: []
           always_nodes: []
-      
+
       # Undeploy applications
       - identifier: node-undeploy-applications-simplified
         unified_job_template:
@@ -379,7 +379,7 @@
             - identifier: node-undeploy-tools-simplified
           failure_nodes: []
           always_nodes: []
-      
+
       # Undeploy tools
       - identifier: node-undeploy-tools-simplified
         unified_job_template:
