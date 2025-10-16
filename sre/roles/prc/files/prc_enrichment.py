@@ -357,8 +357,8 @@ async def fetch_incidents_data() -> List[Dict[str, Any]]:
         httpx.HTTPError: If there's an HTTP error
     """
     # Calculate time parameters for the last 24 hours
-    to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
-    window_size = 3600000   # last 1 hours in milliseconds
+    #to_timestamp = int(time.time() * 1000)  # Current time in milliseconds
+    #window_size = 3600000   # last 1 hours in milliseconds
     
     # Build URL with time parameters
     #url = f"{INCIDENTS_API_URL}&to={to_timestamp}&windowSize={window_size}"
@@ -407,8 +407,8 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             incident for incident in incidents_data
             if incident.get("type") == "incident"
             and incident.get("probableCause", {}).get("found") is True
-            and (incident.get("entityLabel", "").startswith("otel-demo-frontend") or
-                 incident.get("entityLabel", "").startswith("otel-demo-checkout"))
+            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend","otel-demo-checkout","checkout"))
+        
             and incident.get("problem","").startswith("Alert on all services")
         ]
     elif incident_id == 3:
@@ -417,7 +417,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             incident for incident in incidents_data
             if incident.get("type") == "incident"
             and incident.get("probableCause", {}).get("found") is True
-            and incident.get("entityLabel", "").startswith("otel-demo-frontend")
+            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend"))
             and incident.get("problem","").startswith("Alert on all services")
         ]
     else:
