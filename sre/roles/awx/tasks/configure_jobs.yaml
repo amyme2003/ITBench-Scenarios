@@ -119,6 +119,20 @@
     project: GitHub-ITBench
     state: present
 
+- name: Add job template for short wait period
+  awx.awx.job_template:
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: "ITBench-Custom-EE"
+    inventory: ITBench
+    job_type: run
+    name: "Scenario-{{ incident }}--Wait-Period-Short"
+    organization: ITBench
+    playbook: sre/playbooks/wait_period_short.yaml
+    project: GitHub-ITBench
+    state: present
+
 - name: Add job template for uninstalling applications
   awx.awx.job_template:
     controller_host: "{{ awx_controller_host }}"
