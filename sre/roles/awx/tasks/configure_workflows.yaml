@@ -304,6 +304,17 @@
           type: job_template
         related:
           success_nodes:
+            - identifier: node-wait-period
+          failure_nodes: []
+          always_nodes: []
+      
+      # Wait period - branches out to three parallel paths
+      - identifier: node-wait-period
+        unified_job_template:
+          name: "Scenario-{{ incident }}--Wait-Period-Short"
+          type: job_template
+        related:
+          success_nodes:
             - identifier: node-manage-prc
             - identifier: node-manage-remediation
             - identifier: node-manage-recommended-actions
