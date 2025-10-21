@@ -13,7 +13,8 @@
       ansible.builtin.assert:
         that:
           - instana_api_token is defined
-        fail_msg: "instana_api_token is required. This should be provided securely via AWX credentials."
+          - base_url is defined
+        fail_msg: "instana_api_token and base_url are required. These should be provided securely via AWX credentials."
         success_msg: "All required variables are defined"
       tags:
         - always
@@ -24,6 +25,8 @@
         name: ../roles/recommended_actions
       vars:
         instana_api_token: "{{ instana_api_token }}"
+        base_url: "{{ base_url }}"
+        application_id: "{{ application_id | default('') }}"
         incident_id: "{{ incident_id | default(omit) }}"
       tags:
         - manage_recommended_actions

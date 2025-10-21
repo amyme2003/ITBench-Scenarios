@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dotenv import load_dotenv
@@ -32,8 +33,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger("prc_enrich")
 
+# Configuration from environment
+BASE_URL = os.getenv("BASE_URL")
+APPLICATION_ID = os.getenv("APPLICATION_ID")
+API_TOKEN = os.getenv("TOKEN")
+
+# Validate required environment variables
+if not BASE_URL or not API_TOKEN:
+    print("Missing required environment variables: BASE_URL or TOKEN")
+    sys.exit(1)
+
+# Log the configuration
+logger.info(f"Using Instana base URL: {BASE_URL}")
+if APPLICATION_ID:
+    logger.info(f"Using application ID: {APPLICATION_ID}")
+
 # API URLs
-BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ENDPOINT_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/endpoints"
 SERVICE_METRICS_URL = f"{BASE_URL}/api/application-monitoring/metrics/services"
@@ -48,10 +63,6 @@ else:
     incident_id = None  # No default, will show all incidents if not specified
     logger.info(f"No valid incident_id provided, will show all matching incidents")
 
-# Get API token from environment variable
-API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
-if not API_TOKEN:
-    raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
     "Content-Type": "application/json"

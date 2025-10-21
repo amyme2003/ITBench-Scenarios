@@ -16,7 +16,9 @@
 - name: Set environment variables for Remediation script
   ansible.builtin.set_fact:
     instana_env:
-      INSTANA_API_TOKEN: "{{ instana_api_token }}"
+      BASE_URL: "{{ base_url }}"
+      APPLICATION_ID: "{{ application_id | default('') }}"
+      TOKEN: "{{ instana_api_token }}"
       AWX_EXECUTION: "true"
       INCIDENT_ID: "{{ incident_id | default('') }}"
 

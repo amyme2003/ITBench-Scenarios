@@ -14,6 +14,7 @@ import logging
 import time
 from typing import Dict, List, Any, Optional
 import os
+import sys
 import httpx
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks
@@ -36,15 +37,25 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
+# Configuration from environment
+BASE_URL = os.getenv("BASE_URL")
+APPLICATION_ID = os.getenv("APPLICATION_ID")
+API_TOKEN = os.getenv("TOKEN")
+
+# Validate required environment variables
+if not BASE_URL or not API_TOKEN:
+    print("Missing required environment variables: BASE_URL or TOKEN")
+    sys.exit(1)
+
+# Log the configuration
+logger.info(f"Using Instana base URL: {BASE_URL}")
+if APPLICATION_ID:
+    logger.info(f"Using application ID: {APPLICATION_ID}")
+
 # API URLs
-BASE_URL = "https://release-instana.instana.rocks"
 INCIDENTS_API_URL = f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT"
 ACTION_GENERATION_URL = f"{BASE_URL}/api/automation/ai/action/generate"
 
-# Get API token from environment variable
-API_TOKEN = os.environ.get("INSTANA_API_TOKEN")
-if not API_TOKEN:
-    raise ValueError("INSTANA_API_TOKEN environment variable is not set. Please set it in the .env file.")
 HEADERS = {
     "Authorization": f"apiToken {API_TOKEN}",
     "Content-Type": "application/json"
@@ -590,7 +601,7 @@ async def process_data_and_exit():
 # === Main Entry Point ===
 if __name__ == "__main__":
     # Check if running in AWX environment
-    if os.environ.get("AWX_EXECUTION") or os.environ.get("INSTANA_API_TOKEN"):
+    if os.environ.get("AWX_EXECUTION") or os.environ.get("TOKEN"):
         # When run in AWX, just process the data and exit
         asyncio.run(process_data_and_exit())
     else:

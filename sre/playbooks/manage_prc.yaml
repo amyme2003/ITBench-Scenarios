@@ -11,8 +11,9 @@
       ansible.builtin.assert:
         that:
           - instana_api_token is defined
+          - base_url is defined
           - incident_id is defined
-        fail_msg: "instana_api_token and incident_id are required. incident_id should be passed as a global variable."
+        fail_msg: "instana_api_token, base_url, and incident_id are required. incident_id should be passed as a global variable."
         success_msg: "All required variables are defined"
       tags:
         - always
@@ -23,9 +24,10 @@
         name: ../roles/prc
       vars:
         instana_api_token: "{{ instana_api_token }}"
+        base_url: "{{ base_url }}"
+        application_id: "{{ application_id | default('') }}"
         prc_incident_id: "{{ incident_id }}"
       tags:
         - manage_prc
-
 
 
