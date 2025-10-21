@@ -22,7 +22,7 @@
     alerts_env:
       BASE_URL: "{{ base_url }}"
       APPLICATION_ID: "{{ application_id }}"
-      TOKEN: "{{ api_token }}"
+      TOKEN: "{{ instana_api_token }}"
 
 - name: Ensure the enable alerts script has execute permissions
   ansible.builtin.file:

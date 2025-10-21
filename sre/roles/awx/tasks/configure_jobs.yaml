@@ -478,7 +478,7 @@
       incident_id: "{{ incident }}"
       base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
       application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
-      api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+      instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Enable-Alerts"
@@ -498,7 +498,7 @@
       incident_id: "{{ incident }}"
       base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
       application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
-      api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+      instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Disable-Alerts"

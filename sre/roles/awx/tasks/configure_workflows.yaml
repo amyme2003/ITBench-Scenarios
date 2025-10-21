@@ -242,7 +242,7 @@
         extra_data:
           base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
           application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
-          api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+          instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
         related:
           success_nodes:
             - identifier: node-deploy-tools-simplified
@@ -290,7 +290,7 @@
         extra_data:
           base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
           application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
-          api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+          instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
         related:
           success_nodes:
             - identifier: node-manage-incidents
@@ -362,7 +362,7 @@
         extra_data:
           base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
           application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
-          api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+          instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
         related:
           success_nodes:
             - identifier: node-undeploy-applications-simplified

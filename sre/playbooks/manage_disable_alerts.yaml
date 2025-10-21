@@ -10,8 +10,8 @@
         that:
           - base_url is defined
           - application_id is defined
-          - api_token is defined
-        fail_msg: "base_url, application_id, and api_token are required variables."
+          - instana_api_token is defined
+        fail_msg: "base_url, application_id, and instana_api_token are required variables."
         success_msg: "All required variables are defined"
       tags:
         - always
@@ -24,7 +24,7 @@
         operation: "disable"
         base_url: "{{ base_url }}"
         application_id: "{{ application_id }}"
-        api_token: "{{ api_token }}"
+        instana_api_token: "{{ instana_api_token }}"
       tags:
         - manage_alerts
 
