@@ -432,15 +432,14 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             and incident.get("problem","").startswith("Alert on all services")
         ]
     else:
-        # Check if incident_id is provided but not valid
-        if incident_id is not None and not any(incident.get("incidentId") == incident_id for incident in incidents_data):
-            logger.warning(f"Invalid incident_id: {incident_id}. No matching incident found.")
-            print(f"Invalid incident_id: {incident_id}. No matching incident found.")
-            filtered = []  # Return empty list for invalid incident_id
-        else:
-            # Default filtering criteria for other incident_ids or when no specific id is provided
-            filtered = []
-            #Invalid incident_id message here
+        filtered = [
+            incident for incident in incidents_data
+            if incident.get("type") == "incident"
+            and incident.get("probableCause", {}).get("found") is True
+            and incident.get("problem","").startswith("Alert on all services")
+        ]
+
+
     
     logger.info(f"After filtering: {len(filtered)} PRC incidents")
     
