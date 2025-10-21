@@ -4,7 +4,7 @@
   hosts: all
   gather_facts: false
   vars:
-    wait_minutes: 3  # Wait time in minutes
+    wait_minutes: 8  # Wait time in minutes
     wait_message: "Waiting for processes to complete..."
   tasks:
     - name: Display wait start message
