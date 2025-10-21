@@ -178,7 +178,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      instana_api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+      instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+      base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
+      application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
     inventory: ITBench
     job_tags: manage_prc
     job_type: run
@@ -197,7 +199,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      instana_api_token:  "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+      instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+      base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
+      application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
     inventory: ITBench
     job_tags: manage_remediation
     job_type: run
@@ -216,7 +220,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      instana_api_token:  "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+      instana_api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
+      base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
+      application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
     inventory: ITBench
     job_tags: manage_recommended_actions
     job_type: run
@@ -470,9 +476,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      base_url: "{{ awx_credentials.instana.base_url }}"
-      application_id: "{{ awx_credentials.instana.application_id }}"
-      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+      base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
+      application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
+      api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Enable-Alerts"
@@ -490,9 +496,9 @@
     execution_environment: "ITBench-Custom-EE"
     extra_vars:
       incident_id: "{{ incident }}"
-      base_url: "{{ awx_credentials.instana.base_url }}"
-      application_id: "{{ awx_credentials.instana.application_id }}"
-      api_token: "{{ awx_credentials.instana.api_token }}" # pragma: allowlist secret
+      base_url: "{{ base_url | default(awx_credentials.instana.base_url) }}"
+      application_id: "{{ application_id | default(awx_credentials.instana.application_id) }}"
+      api_token: "{{ instana_api_token | default(awx_credentials.instana.api_token) }}" # pragma: allowlist secret
     inventory: ITBench
     job_type: run
     name: "Scenario-{{ incident }}--Disable-Alerts"
@@ -500,3 +506,5 @@
     playbook: sre/playbooks/manage_disable_alerts.yaml
     project: GitHub-ITBench
     state: present
+
+
