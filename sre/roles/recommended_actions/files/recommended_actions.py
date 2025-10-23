@@ -93,11 +93,9 @@ class RemediationResponse(BaseModel):
 
 async def fetch_incidents() -> List[Dict[str, Any]]:
     """Fetch incidents from API."""
-    Incident3_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758575400000&to=1758748199000"
-    #Incident23_Modified_url=f"{BASE_URL}/api/events?eventTypeFilters=INCIDENT&from=1758141000000&to=1758313799000"
     
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(Incident3_Modified_url, headers=HEADERS)
+        response = await client.get(INCIDENTS_API_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
 
@@ -137,7 +135,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             incident for incident in incidents_data
             if incident.get("type") == "incident"
             and incident.get("probableCause", {}).get("found") is True
-            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend","checkout","otel-demo-checkout"))
+            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","otel-demo-checkout","frontend","checkout"))   
             and incident.get("problem","").startswith("Alert on all services")
         ]
     elif incident_id == 3:
@@ -147,15 +145,6 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
             if incident.get("type") == "incident"
             and incident.get("probableCause", {}).get("found") is True
             and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend"))
-            and incident.get("problem","").startswith("Alert on all services")
-        ]
-    elif incident_id == 31:
-        # Filtering criteria for incident_id 31
-        filtered = [
-            incident for incident in incidents_data
-            if incident.get("type") == "incident"
-            and incident.get("probableCause", {}).get("found") is True
-            and incident.get("entityLabel", "").startswith("otel-demo-frontend")
             and incident.get("problem","").startswith("Alert on all services")
         ]
     else:
