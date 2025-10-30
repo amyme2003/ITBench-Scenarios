@@ -1,0 +1,34 @@
+---
+- name: Manage Recommended Actions for PRC Incidents
+  hosts:
+    - environment
+  gather_facts: true
+  
+  # This playbook can be run with an optional incident_id parameter to filter for a specific incident
+  # Example: ansible-playbook manage_recommended_actions.yaml -e "incident_id=23"
+  # Currently supported incident IDs: 3, 23, 31
+  
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - instana_api_token is defined
+          - base_url is defined
+        fail_msg: "instana_api_token and base_url are required. These should be provided securely via AWX credentials."
+        success_msg: "All required variables are defined"
+      tags:
+        - always
+
+  tasks:
+    - name: Import Recommended Actions role
+      ansible.builtin.import_role:
+        name: ../roles/recommended_actions
+      vars:
+        instana_api_token: "{{ instana_api_token }}"
+        base_url: "{{ base_url }}"
+        application_id: "{{ application_id | default('') }}"
+        incident_id: "{{ incident_id | default(omit) }}"
+      tags:
+        - manage_recommended_actions
+
+
