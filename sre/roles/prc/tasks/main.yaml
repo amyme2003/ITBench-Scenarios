@@ -1,0 +1,77 @@
+---
+# Tasks for PRC (Probable Root Cause) enrichment role
+
+- name: Create a virtual environment for PRC enrichment script
+  ansible.builtin.shell:
+    cmd: "python3 -m venv {{ role_path }}/venv"
+  args:
+    creates: "{{ role_path }}/venv"
+  changed_when: false
+
+- name: Install dependencies in virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/pip install -r {{ role_path }}/files/requirements.txt"
+  changed_when: false
+
+- name: Set environment variables for API access
+  ansible.builtin.set_fact:
+    instana_env:
+      BASE_URL: "{{ base_url }}"
+      APPLICATION_ID: "{{ application_id | default('') }}"
+      TOKEN: "{{ instana_api_token }}"
+      INCIDENT_ID: "{{ prc_incident_id | default('') }}"
+
+- name: Ensure the PRC enrichment script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/prc_enrichment.py"
+    mode: '0755'
+
+- name: Create artifacts directory
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/../artifacts"
+    state: directory
+    mode: '0755'
+
+- name: Run PRC enrichment script with virtual environment (with timeout)
+  ansible.builtin.shell:
+    cmd: "timeout 120 {{ role_path }}/venv/bin/python {{ role_path }}/files/prc_enrichment.py"
+  args:
+    executable: /bin/bash
+  environment: "{{ instana_env }}"
+  register: prc_script_output
+  changed_when: false
+  ignore_errors: true
+  async: 180  # Run the task asynchronously with a 3-minute timeout
+  poll: 10    # Check every 10 seconds
+
+- name: Check if output JSON file exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/prc_all.json"
+  register: prc_json_file
+
+- name: Read PRC JSON output
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/prc_all.json"
+  register: prc_json_content
+  when: prc_json_file.stat.exists
+
+- name: Set PRC data as fact
+  ansible.builtin.set_fact:
+    prc_data: "{{ prc_json_content.content | b64decode | from_json if prc_json_file.stat.exists else {'status': 'error', 'message': 'PRC output file not found'} }}"
+
+- name: Create fallback PRC data if script failed
+  ansible.builtin.set_fact:
+    prc_data: "{{ {'status': 'error', 'message': 'PRC enrichment script execution failed', 'error': prc_script_output.stderr | default('Unknown error')} }}"
+  when: prc_script_output.rc is defined and prc_script_output.rc != 0
+
+- name: Debug PRC data (pretty print)
+  debug:
+    msg: "{{ prc_data | to_nice_json }}"
+
+- name: Set job artifact
+  ansible.builtin.set_stats:
+    data:
+      prc_data: "{{ prc_data }}"
+    per_host: false
+
+
