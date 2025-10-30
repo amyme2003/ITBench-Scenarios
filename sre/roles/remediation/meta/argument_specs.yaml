@@ -1,0 +1,15 @@
+---
+argument_specs:
+  main:
+    short_description: Remediation role for PRC incidents
+    description:
+      - This role runs a Python script that fetches incident data with probable root causes (PRC)
+      - It triggers AI-generated remediation actions by sending incident details to the action generation endpoint
+      - The results are saved as an AWX job artifact
+    options:
+      instana_api_token:
+        type: str
+        required: true
+        description: API token for Instana
+
+
