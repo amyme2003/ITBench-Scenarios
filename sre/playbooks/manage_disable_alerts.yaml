@@ -15,6 +15,7 @@
         success_msg: "All required variables are defined"
       tags:
         - always
+        - disable_alerts
 
   tasks:
     - name: Import alerts role
@@ -27,3 +28,6 @@
         instana_api_token: "{{ instana_api_token }}"
       tags:
         - manage_alerts
+        - disable_alerts
+
+
