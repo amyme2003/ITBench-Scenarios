@@ -407,7 +407,7 @@
     job_type: run
     name: Enable-Alerts
     organization: ITBench
-    playbook: sre/playbooks/manage_alerts.yaml
+    playbook: sre/playbooks/manage_enable_alerts.yaml
     project: GitHub-ITBench
     state: present
 
@@ -425,7 +425,7 @@
     job_type: run
     name: Disable-Alerts
     organization: ITBench
-    playbook: sre/playbooks/manage_alerts.yaml
+    playbook: sre/playbooks/manage_disable_alerts.yaml
     project: GitHub-ITBench
     state: present
 
