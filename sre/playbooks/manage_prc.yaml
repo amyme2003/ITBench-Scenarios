@@ -3,8 +3,8 @@
   hosts:
     - environment
   gather_facts: true
-  
-  
+
+
   pre_tasks:
 
     - name: Validate required variables
@@ -29,5 +29,3 @@
         prc_incident_id: "{{ incident_id }}"
       tags:
         - manage_prc
-
-

@@ -3,11 +3,11 @@
   hosts:
     - environment
   gather_facts: true
-  
+
   # This playbook can be run with an optional incident_id parameter to filter for a specific incident
   # Example: ansible-playbook manage_remediation.yaml -e "incident_id=23"
   # Currently supported incident IDs: 3, 23
-  
+
   pre_tasks:
     - name: Validate required variables
       ansible.builtin.assert:
@@ -30,5 +30,3 @@
         incident_id: "{{ incident_id | default(omit) }}"
       tags:
         - manage_remediation
-
-
