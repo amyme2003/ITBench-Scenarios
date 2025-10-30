@@ -18,6 +18,7 @@
         success_msg: "All required variables are defined"
       tags:
         - always
+        - recommended_actions
 
   tasks:
     - name: Import Recommended Actions role
@@ -30,3 +31,6 @@
         incident_id: "{{ incident_id | default(omit) }}"
       tags:
         - manage_recommended_actions
+        - recommended_actions
+
+

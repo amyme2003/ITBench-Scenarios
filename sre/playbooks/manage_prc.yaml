@@ -17,6 +17,7 @@
         success_msg: "All required variables are defined"
       tags:
         - always
+        - prc
 
   tasks:
     - name: Import PRC role
@@ -29,3 +30,6 @@
         prc_incident_id: "{{ incident_id }}"
       tags:
         - manage_prc
+        - prc
+
+
