@@ -1,0 +1,18 @@
+---
+# playbook to add a waiting period of 3 minutes
+- name: Wait for a specified period
+  hosts: all
+  gather_facts: false
+  vars:
+    wait_minutes: 8  # Wait time in minutes
+    wait_message: "Waiting for processes to complete..."
+  tasks:
+    - name: Display wait start message
+      ansible.builtin.debug:
+        msg: "{{ wait_message }} Will wait for {{ wait_minutes }} minutes."
+    - name: Wait for specified minutes
+      ansible.builtin.pause:
+        minutes: "{{ wait_minutes }}"
+    - name: Display wait completion message
+      ansible.builtin.debug:
+        msg: "Wait period of {{ wait_minutes }} minutes completed."
