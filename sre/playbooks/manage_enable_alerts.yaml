@@ -3,7 +3,7 @@
   hosts:
     - environment
   gather_facts: true
-  
+
   pre_tasks:
     - name: Validate required variables
       ansible.builtin.assert:
@@ -15,7 +15,7 @@
         success_msg: "All required variables are defined"
       tags:
         - always
-  
+
   tasks:
     - name: Import alerts role
       ansible.builtin.import_role:
@@ -27,5 +27,3 @@
         instana_api_token: "{{ instana_api_token }}"
       tags:
         - manage_alerts
-
-
