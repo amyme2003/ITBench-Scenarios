@@ -2,9 +2,9 @@
 - identifier: node-disable-alerts
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
@@ -58,9 +58,9 @@
 - identifier: node-enable-alerts
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
@@ -101,9 +101,9 @@
 - identifier: node-prc
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
@@ -119,9 +119,9 @@
 - identifier: node-remediation
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
@@ -137,9 +137,9 @@
 - identifier: node-recommended-actions
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
@@ -163,9 +163,9 @@
 - identifier: node-disable-alerts-final
   extra_data:
     incident_id: {{ scenario_id }}
-    base_url: "{{ base_url }}"
-    application_id: "{{ application_id }}"
-    instana_api_token: "{{ instana_api_token }}" # pragma: allowlist secret
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
   related:
     credentials:
       - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
