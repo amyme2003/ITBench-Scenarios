@@ -1,0 +1,167 @@
+---
+- identifier: node-disable-alerts
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-deploy-tools
+  unified_job_template:
+    name: Disable-Alerts
+    type: job_template
+
+- identifier: node-deploy-tools
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-deploy-applications
+  unified_job_template:
+    name: Deploy-Tools
+    type: job_template
+
+- identifier: node-deploy-applications
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-wait-period
+  unified_job_template:
+    name: Deploy-Applications
+    type: job_template
+
+- identifier: node-wait-period
+  related:
+    success_nodes:
+      - identifier: node-enable-alerts
+  unified_job_template:
+    name: Wait-Period
+    type: job_template
+
+- identifier: node-enable-alerts
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-inject-faults
+  unified_job_template:
+    name: Enable-Alerts
+    type: job_template
+
+- identifier: node-inject-faults
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-wait-period-short
+  unified_job_template:
+    name: Inject-Faults
+    type: job_template
+
+- identifier: node-wait-period-short
+  related:
+    success_nodes:
+      - identifier: node-prc
+      - identifier: node-remediation
+      - identifier: node-recommended-actions
+  unified_job_template:
+    name: Wait-Period-Short
+    type: job_template
+
+- identifier: node-prc
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-join
+  unified_job_template:
+    name: Run-PRC
+    type: job_template
+
+- identifier: node-remediation
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-join
+  unified_job_template:
+    name: Run-Remediation
+    type: job_template
+
+- identifier: node-recommended-actions
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-join
+  unified_job_template:
+    name: Run-Recommended-Actions
+    type: job_template
+
+- identifier: node-join
+  related:
+    success_nodes:
+      - identifier: node-disable-alerts-final
+  unified_job_template:
+    name: Pause
+    type: job_template
+
+- identifier: node-disable-alerts-final
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-undeploy-applications
+  unified_job_template:
+    name: Disable-Alerts
+    type: job_template
+
+- identifier: node-undeploy-applications
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    success_nodes:
+      - identifier: node-undeploy-tools
+  unified_job_template:
+    name: Undeploy-Applications
+    type: job_template
+
+- identifier: node-undeploy-tools
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+  unified_job_template:
+    name: Undeploy-Tools
+    type: job_template
