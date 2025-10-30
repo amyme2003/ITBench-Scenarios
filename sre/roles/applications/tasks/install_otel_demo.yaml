@@ -64,6 +64,9 @@
     values:
       components:
         accounting:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           podSecurityContext:
@@ -78,6 +81,9 @@
               cpu: 50m
               memory: 150Mi
         ad:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.ad.replicas }}"
@@ -89,6 +95,9 @@
               cpu: 50m
               memory: 450Mi
         cart:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.cart.replicas }}"
@@ -100,6 +109,11 @@
               cpu: 50m
               memory: 110Mi
         checkout:
+          envOverrides:
+            - name: SHIPPING_ADDR
+              value: http://shipping:8080
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.checkout.replicas }}"
@@ -111,6 +125,9 @@
               cpu: 50m
               memory: 40Mi
         currency:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.currency.replicas }}"
@@ -122,6 +139,9 @@
               cpu: 20m
               memory: 10Mi
         email:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.email.replicas }}"
@@ -133,6 +153,9 @@
               cpu: 30m
               memory: 100Mi
         flagd:
+          envOverrides:
+            - name: FLAGD_OTEL_COLLECTOR_URI
+              value: instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           resources:
@@ -143,6 +166,9 @@
               cpu: 20m
               memory: 60Mi
         fraud-detection:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.fraud_detection.replicas }}"
@@ -154,6 +180,15 @@
               cpu: 75m
               memory: 400Mi
         frontend:
+          envOverrides:
+            - name: OTEL_COLLECTOR_HOST
+              value: instana-agent.instana-agent
+            - name: SHIPPING_ADDR
+              value: http://shipping:8080
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
+            - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: http://instana-agent.instana-agent:4317/v1/traces
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.frontend.replicas }}"
@@ -165,6 +200,9 @@
               cpu: 100m
               memory: 200Mi
         frontend-proxy:
+          envOverrides:
+            - name: OTEL_COLLECTOR_HOST
+              value: instana-agent.instana-agent
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.frontend_proxy.replicas }}"
@@ -176,6 +214,9 @@
               cpu: 30m
               memory: 50Mi
         image-provider:
+          envOverrides:
+            - name: OTEL_COLLECTOR_HOST
+              value: instana-agent.instana-agent
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.image_provider.replicas }}"
@@ -190,6 +231,9 @@
               cpu: 5m
               memory: 15Mi
         kafka:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.kafka.replicas }}"
@@ -208,6 +252,8 @@
               value: "{{ configuration.load_generator.spawn_rate | string }}"
             - name: LOCUST_USERS
               value: "{{ configuration.load_generator.users | string }}"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           resources:
@@ -218,6 +264,9 @@
               cpu: 500m
               memory: 750Mi
         payment:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.payment.replicas }}"
@@ -240,6 +289,9 @@
               cpu: 50m
               memory: 100Mi
         product-catalog:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.product_catalog.replicas }}"
@@ -251,6 +303,9 @@
               cpu: 50m
               memory: 30Mi
         quote:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4318
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.quote.replicas }}"
@@ -262,6 +317,9 @@
               cpu: 5m
               memory: 40Mi
         recommendation:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.recommendation.replicas }}"
@@ -273,6 +331,9 @@
               cpu: 50m
               memory: 80Mi
         shipping:
+          envOverrides:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://instana-agent.instana-agent:4317
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.shipping.replicas }}"
