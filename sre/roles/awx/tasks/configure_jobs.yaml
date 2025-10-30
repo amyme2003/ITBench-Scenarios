@@ -338,3 +338,127 @@
     playbook: sre/playbooks/sync_scenarios.yaml
     project: GitHub-ITBench
     state: present
+
+- name: Add job template for PRC
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: prc
+    job_type: run
+    name: Run-PRC
+    organization: ITBench
+    playbook: sre/playbooks/manage_prc.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for remediation
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: remediation
+    job_type: run
+    name: Run-Remediation
+    organization: ITBench
+    playbook: sre/playbooks/manage_remediation.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for recommended actions
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: recommended_actions
+    job_type: run
+    name: Run-Recommended-Actions
+    organization: ITBench
+    playbook: sre/playbooks/manage_recommended_actions.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for enabling alerts
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: enable_alerts
+    job_type: run
+    name: Enable-Alerts
+    organization: ITBench
+    playbook: sre/playbooks/manage_alerts.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for disabling alerts
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: disable_alerts
+    job_type: run
+    name: Disable-Alerts
+    organization: ITBench
+    playbook: sre/playbooks/manage_alerts.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for wait period
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_type: run
+    name: Wait-Period
+    organization: ITBench
+    playbook: sre/playbooks/wait_period.yaml
+    project: GitHub-ITBench
+    state: present
+
+- name: Add job template for short wait period
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_type: run
+    name: Wait-Period-Short
+    organization: ITBench
+    playbook: sre/playbooks/wait_period_short.yaml
+    project: GitHub-ITBench
+    state: present
