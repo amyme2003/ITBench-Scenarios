@@ -1,0 +1,69 @@
+---
+# Tasks for Alerts management role
+
+- name: Set default operation if not provided
+  ansible.builtin.set_fact:
+    operation: "{{ operation | default('enable') }}"
+
+- name: Create a virtual environment for alerts management script
+  ansible.builtin.shell:
+    cmd: "python3 -m venv {{ role_path }}/venv"
+  args:
+    creates: "{{ role_path }}/venv"
+  changed_when: false
+
+- name: Install dependencies in virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/pip install -r {{ role_path }}/files/requirements.txt"
+  changed_when: false
+
+- name: Set environment variables for API access
+  ansible.builtin.set_fact:
+    alerts_env:
+      BASE_URL: "{{ base_url }}"
+      APPLICATION_ID: "{{ application_id }}"
+      TOKEN: "{{ instana_api_token }}"
+
+- name: Ensure the enable alerts script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/enable_alerts.py"
+    mode: '0755'
+  when: operation == 'enable'
+
+- name: Ensure the disable alerts script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/disable_alerts.py"
+    mode: '0755'
+  when: operation == 'disable'
+
+- name: Run enable alerts script with virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/enable_alerts.py"
+  args:
+    executable: /bin/bash
+  environment: "{{ alerts_env }}"
+  register: alerts_script_output
+  changed_when: false
+  ignore_errors: true
+  when: operation == 'enable'
+
+- name: Run disable alerts script with virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/disable_alerts.py"
+  args:
+    executable: /bin/bash
+  environment: "{{ alerts_env }}"
+  register: alerts_script_output
+  changed_when: false
+  ignore_errors: true
+  when: operation == 'disable'
+
+- name: Display script output
+  debug:
+    msg: "{{ alerts_script_output.stdout_lines | default(['No output']) }}"
+  when: alerts_script_output.stdout is defined
+
+- name: Display script errors (if any)
+  debug:
+    msg: "{{ alerts_script_output.stderr_lines | default(['No errors']) }}"
+  when: alerts_script_output.stderr is defined and alerts_script_output.stderr != ''
