@@ -40,8 +40,8 @@
         incidents_file:
           id: "{{ incident_id }}"
   tasks:
-    - name: Import leaderboard role
-      ansible.builtin.import_role:
+    - name: Include leaderboard role
+      ansible.builtin.include_role:
         name: leaderboard
       vars:
         leaderboard_status:
@@ -58,16 +58,16 @@
               kubeconfig: "{{ cluster.kubeconfig }}"
             faults_specs: "{{ incidents_spec.scenario.spec.faults }}"
 
-        - name: Import leaderboard role
-          ansible.builtin.import_role:
+        - name: Include leaderboard role
+          ansible.builtin.include_role:
             name: leaderboard
           vars:
             leaderboard_status:
               status: succeeded
             leaderboard_storage: "{{ storage }}"
       rescue:
-        - name: Import leaderboard role
-          ansible.builtin.import_role:
+        - name: Include leaderboard role
+          ansible.builtin.include_role:
             name: leaderboard
           vars:
             leaderboard_status:
