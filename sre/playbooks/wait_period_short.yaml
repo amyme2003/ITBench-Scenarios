@@ -1,10 +1,10 @@
 ---
-# playbook to add a waiting period of 3 minutes
+# playbook to add a waiting period of 12 minutes
 - name: Wait for a specified period
   hosts: all
   gather_facts: false
   vars:
-    wait_minutes: 8  # Wait time in minutes
+    wait_minutes: 12  # Wait time in minutes
     wait_message: "Waiting for processes to complete..."
   tasks:
     - name: Display wait start message
