@@ -665,11 +665,8 @@ async def fetch_prc_details():
 
         # Check if no incidents were found after filtering
         if not prc_incidents:
-            # Create an empty response with error message
-            empty_response = {
-                "error": "No incidents fetched",
-                "message": f"Invalid incident ID: {incident_id}" if incident_id is not None else "No incidents matched the filtering criteria"
-            }
+            empty_response = {}
+            
             
             # Log the message
             logger.info("No incidents found after filtering.")
