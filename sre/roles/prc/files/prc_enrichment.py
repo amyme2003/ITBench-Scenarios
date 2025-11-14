@@ -411,33 +411,13 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
     logger.info(f"Incidents with PRC found=True: {prc_counts}")
     logger.info(f"Filtering for incident_id: {incident_id if incident_id is not None else 'All'}")
     
-    # Apply different filtering criteria based on incident_id
-    if incident_id == 23:
-        # Filtering criteria for incident_id 3
-        filtered = [
-            incident for incident in incidents_data
-            if incident.get("type") == "incident"
-            and incident.get("probableCause", {}).get("found") is True
-            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend","otel-demo-checkout","checkout"))
-        
-            and incident.get("problem","").startswith("Alert on all services")
-        ]
-    elif incident_id == 3:
-        # Filtering criteria for incident_id 23
-        filtered = [
-            incident for incident in incidents_data
-            if incident.get("type") == "incident"
-            and incident.get("probableCause", {}).get("found") is True
-            and incident.get("entityLabel", "").startswith(("otel-demo-frontend","frontend"))
-            and incident.get("problem","").startswith("Alert on all services")
-        ]
-    else:
-        filtered = [
-            incident for incident in incidents_data
-            if incident.get("type") == "incident"
-            and incident.get("probableCause", {}).get("found") is True
-            and incident.get("problem","").startswith("Alert on all services")
-        ]
+    
+    filtered = [
+        incident for incident in incidents_data
+        if incident.get("type") == "incident"
+        and incident.get("probableCause", {}).get("found") is True
+        and incident.get("problem","").startswith("Alert on all services")]
+
 
 
     
