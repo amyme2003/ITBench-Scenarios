@@ -52,8 +52,8 @@
   register: remediation_script_output
   changed_when: false
   ignore_errors: true
-  # Increase timeout for API calls
-  timeout: 300
+
+  timeout: 900
   tags:
     - remediation
 
