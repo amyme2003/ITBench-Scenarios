@@ -482,14 +482,15 @@ def save_results(results: List[Dict[str, Any]]) -> None:
 
 # === Main Runner ===
 async def main():
-    incidents = await fetch_incidents()
+    incidents = await fetch_incidents()   
     prc_incidents = filter_prc_incidents(incidents, incident_id)
-
+        
     results = []
     for inc in prc_incidents:
         res = await trigger_remediation(inc)
         results.append(res)
-
+        
+        # Save results (will be an empty list if no incidents matched)
     save_results(results)
     return results
 
