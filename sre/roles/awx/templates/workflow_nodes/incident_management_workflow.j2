@@ -111,7 +111,7 @@
       - name: AWS
 {% endif %}
     success_nodes:
-      - identifier: node-join
+      - identifier: node-remove-faults
   unified_job_template:
     name: Run-PRC
     type: job_template
@@ -129,7 +129,7 @@
       - name: AWS
 {% endif %}
     success_nodes:
-      - identifier: node-join
+      - identifier: node-remove-faults
   unified_job_template:
     name: Run-Remediation
     type: job_template
@@ -147,17 +147,24 @@
       - name: AWS
 {% endif %}
     success_nodes:
-      - identifier: node-join
+      - identifier: node-remove-faults
   unified_job_template:
     name: Run-Recommended-Actions
     type: job_template
 
-- identifier: node-join
+- identifier: node-remove-faults
+  extra_data:
+    incident_id: {{ scenario_id }}
   related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
     success_nodes:
       - identifier: node-disable-alerts-final
   unified_job_template:
-    name: Pause
+    name: Remove-Faults
     type: job_template
 
 - identifier: node-disable-alerts-final
