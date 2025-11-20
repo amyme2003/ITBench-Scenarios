@@ -17,7 +17,7 @@
   kubernetes.core.helm:
     chart_ref: kube-prometheus-stack
     chart_repo_url: https://prometheus-community.github.io/helm-charts
-    chart_version: 77.12.0
+    chart_version: 79.4.1
     kubeconfig: "{{ tools_cluster.kubeconfig }}"
     release_name: "{{ helm_release.name }}"
     release_namespace: "{{ helm_release.namespace }}"
@@ -30,6 +30,10 @@
         enabled: false
       prometheus:
         prometheusSpec:
+          podMonitorNamespaceSelector:
+            matchLabels:
+              it-bench/monitoring: "true"
+          podMonitorSelectorNilUsesHelmValues: false
           ruleNamespaceSelector:
             matchLabels:
               it-bench/monitoring: "true"
@@ -44,6 +48,10 @@
       defaultRules:
         rules:
           alertmanager: false
+      kubeEtcd:
+        enabled: "{{ tools_cluster.provider == 'kind' }}"
+      kubeProxy:
+        enabled: "{{ tools_cluster.provider == 'kind' }}"
     wait: true
   when:
     - tools_cluster.platform == "kubernetes"
