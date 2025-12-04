@@ -65,8 +65,26 @@
       components:
         accounting:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=accounting
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           podSecurityContext:
@@ -82,8 +100,26 @@
               memory: 150Mi
         ad:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=ad
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.ad.replicas }}"
@@ -96,8 +132,26 @@
               memory: 450Mi
         cart:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=cart
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.cart.replicas }}"
@@ -110,10 +164,26 @@
               memory: 110Mi
         checkout:
           envOverrides:
-            - name: SHIPPING_ADDR
-              value: http://shipping:8080
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=checkout
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.checkout.replicas }}"
@@ -126,8 +196,26 @@
               memory: 40Mi
         currency:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=currency
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.currency.replicas }}"
@@ -140,8 +228,26 @@
               memory: 10Mi
         email:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=email
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.email.replicas }}"
@@ -154,8 +260,26 @@
               memory: 100Mi
         flagd:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=flagd
             - name: FLAGD_OTEL_COLLECTOR_URI
               value: instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           resources:
@@ -167,8 +291,26 @@
               memory: 60Mi
         fraud-detection:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=fraud-detection
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.fraud_detection.replicas }}"
@@ -181,14 +323,30 @@
               memory: 400Mi
         frontend:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=frontend
             - name: OTEL_COLLECTOR_HOST
               value: instana-agent.instana-agent
-            - name: SHIPPING_ADDR
-              value: http://shipping:8080
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
             - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: http://instana-agent.instana-agent:4317/v1/traces
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.frontend.replicas }}"
@@ -201,8 +359,26 @@
               memory: 200Mi
         frontend-proxy:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=frontend-proxy
             - name: OTEL_COLLECTOR_HOST
               value: instana-agent.instana-agent
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.frontend_proxy.replicas }}"
@@ -215,8 +391,26 @@
               memory: 50Mi
         image-provider:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=image-provider
             - name: OTEL_COLLECTOR_HOST
               value: instana-agent.instana-agent
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.image_provider.replicas }}"
@@ -232,8 +426,26 @@
               memory: 15Mi
         kafka:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=kafka
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.kafka.replicas }}"
@@ -246,6 +458,9 @@
               memory: 600Mi
         load-generator:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=load-generator
             - name: LOCUST_BROWSER_TRAFFIC_ENABLED
               value: "false"
             - name: LOCUST_SPAWN_RATE
@@ -254,6 +469,21 @@
               value: "{{ configuration.load_generator.users | string }}"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           resources:
@@ -265,8 +495,26 @@
               memory: 750Mi
         payment:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=payment
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.payment.replicas }}"
@@ -290,8 +538,26 @@
               memory: 100Mi
         product-catalog:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=product-catalog
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.product_catalog.replicas }}"
@@ -304,8 +570,26 @@
               memory: 30Mi
         quote:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=quote
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4318
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.quote.replicas }}"
@@ -318,8 +602,26 @@
               memory: 40Mi
         recommendation:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=recommendation
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.recommendation.replicas }}"
@@ -332,8 +634,26 @@
               memory: 80Mi
         shipping:
           envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=shipping
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://instana-agent.instana-agent:4317
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.shipping.replicas }}"
@@ -345,6 +665,25 @@
               cpu: 5m
               memory: 15Mi
         valkey-cart:
+          envOverrides:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.1.3,k8s.namespace.name=$(K8S_NAMESPACE),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID),k8s.deployment.name=valkey-cart
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
           replicas: "{{ configuration.valkey_cart.replicas }}"
