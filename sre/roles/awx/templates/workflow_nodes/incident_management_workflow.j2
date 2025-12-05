@@ -209,36 +209,6 @@
 {% if requires_aws_credentials %}
       - name: AWS
 {% endif %}
-    success_nodes:
-      - identifier: node-deploy-tools-final
   unified_job_template:
     name: Undeploy-Tools
-    type: job_template
-
-- identifier: node-deploy-tools-final
-  extra_data:
-    incident_id: {{ scenario_id }}
-  related:
-    credentials:
-      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
-{% if requires_aws_credentials %}
-      - name: AWS
-{% endif %}
-    success_nodes:
-      - identifier: node-deploy-applications-final
-  unified_job_template:
-    name: Deploy-Tools
-    type: job_template
-
-- identifier: node-deploy-applications-final
-  extra_data:
-    incident_id: {{ scenario_id }}
-  related:
-    credentials:
-      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
-{% if requires_aws_credentials %}
-      - name: AWS
-{% endif %}
-  unified_job_template:
-    name: Deploy-Applications
     type: job_template
