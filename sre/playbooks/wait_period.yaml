@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    wait_minutes: 27  # Wait time in minutes
+    wait_minutes: 12  # Wait time in minutes
     wait_message: "Waiting for processes to complete..."
 
   tasks:
