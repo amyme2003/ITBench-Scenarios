@@ -5,12 +5,15 @@
     controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
     controller_username: admin
     name: "Scenario-16-Incident-Management-Schedule"
-    description: "Automated schedule for Scenario 16 Incident Management workflow"
+    description: "Automated schedule for Scenario 16 Incident Management workflow (runs every 5 hours)"
     unified_job_template: "Scenario-16-Incident-Management"
     state: present
     enabled: true
     rrule: "DTSTART:20251212T000000Z RRULE:FREQ=HOURLY;INTERVAL=5"
     extra_data:
       incident_id: 16
+      base_url: "{{ instana.base_url | default('') }}"
+      application_id: "{{ instana.application_id | default('') }}"
+      instana_api_token: "{{ instana.api_token | default('') }}" # pragma: allowlist secret
 
 
