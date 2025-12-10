@@ -9,7 +9,7 @@
     unified_job_template: "Scenario-16-Incident-Management"
     state: present
     enabled: true
-    rrule: "DTSTART:20251212T000000Z RRULE:FREQ=HOURLY;INTERVAL=5"
+    rrule: "DTSTART:20251210T070000Z RRULE:FREQ=HOURLY;INTERVAL=3"
     extra_data:
       incident_id: 16
       base_url: "{{ instana.base_url | default('') }}"
