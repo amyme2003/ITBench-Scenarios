@@ -18,3 +18,7 @@
 - name: Import workflow configuration tasks
   ansible.builtin.import_tasks:
     file: configure_workflows.yaml
+
+- name: Import schedule configuration tasks
+  ansible.builtin.import_tasks:
+    file: configure_schedules.yaml
