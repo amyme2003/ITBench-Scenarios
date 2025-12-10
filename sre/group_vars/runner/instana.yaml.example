@@ -1,0 +1,8 @@
+---
+# Instana configuration for incident management workflows
+instana:
+  base_url: ""
+  application_id: ""
+  api_token: "" # pragma: allowlist secret
+
+
