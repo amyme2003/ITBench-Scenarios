@@ -89,6 +89,15 @@
     - fault.custom.name == 'unsupported-image'
     - fault.custom.unsupported_image is defined
 
+- name: Import remove resource limits removal task
+  ansible.builtin.import_tasks:
+    file: remove_custom_remove_resource_limits.yaml
+  vars:
+    spec: "{{ fault.custom.remove_resource_limits }}"
+  when:
+    - fault.custom.name == 'remove-resource-limits'
+    - fault.custom.remove_resource_limits is defined
+
 - name: Import pod anti-affinity rescheduling removal tasks
   ansible.builtin.import_tasks:
     file: remove_custom_pod_anti_affinity_rescheduling.yaml
@@ -124,3 +133,57 @@
   when:
     - fault.custom.name == 'authorization-policy-deny'
     - fault.custom.authorization_policy_deny is defined
+
+- name: Import disabled ambient mode removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_disable_ambient_mode.yaml
+  vars:
+    spec: "{{ fault.custom.disable_ambient_mode }}"
+  when:
+    - fault.custom.name == 'disable-ambient-mode'
+    - fault.custom.disable_ambient_mode is defined
+
+- name: Import readiness flapping removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_readiness_flap.yaml
+  vars:
+    spec: "{{ fault.custom.readiness_flap }}"
+  when:
+    - fault.custom.name == 'readiness-flap'
+    - fault.custom.readiness_flap is defined
+
+- name: Import strict mutual TLS removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_strict_mutual_tls.yaml
+  vars:
+    spec: "{{ fault.custom.strict_mutual_tls }}"
+  when:
+    - fault.custom.name == 'strict-mutual-tls'
+    - fault.custom.strict_mutual_tls is defined
+
+- name: Import DNS misconfiguration removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_dns_misconfiguration.yaml
+  vars:
+    spec: "{{ fault.custom.dns_misconfiguration }}"
+  when:
+    - fault.custom.name == 'dns-misconfiguration'
+    - fault.custom.dns_misconfiguration is defined
+
+- name: Import pod priority eviction removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_pod_priority_eviction.yaml
+  vars:
+    spec: "{{ fault.custom.pod_priority_eviction }}"
+  when:
+    - fault.custom.name == 'pod-priority-eviction'
+    - fault.custom.pod_priority_eviction is defined
+
+- name: Import PDB blocking drain removal tasks
+  ansible.builtin.import_tasks:
+    file: remove_custom_pdb_blocking_drain.yaml
+  vars:
+    spec: "{{ fault.custom.pdb_blocking_drain }}"
+  when:
+    - fault.custom.name == 'pdb-blocking-drain'
+    - fault.custom.pdb_blocking_drain is defined

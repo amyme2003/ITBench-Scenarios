@@ -23,7 +23,6 @@
           openshift.io/sa.scc.uid-range: 1/2000
           openshift.io/sa.scc.supplemental-groups: 1/1000
         labels:
-          istio.io/dataplane-mode: ambient
           it-bench/monitoring: "true"
     state: present
 
@@ -53,8 +52,7 @@
 
 - name: Install OpenTelemetry Demo (Astronomy Shop)
   kubernetes.core.helm:
-    chart_ref: opentelemetry-demo
-    chart_repo_url: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart_ref: oci://ghcr.io/open-telemetry/opentelemetry-helm-charts/opentelemetry-demo
     chart_version: 0.38.6
     kubeconfig: "{{ applications_cluster.kubeconfig }}"
     release_name: "{{ helm_releases.otel_demo.name }}"
@@ -686,6 +684,10 @@
                   fieldPath: metadata.uid
           podAnnotations:
             openshift.io/required-scc: restricted-v2
+          podSecurityContext:
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 999
           replicas: "{{ configuration.valkey_cart.replicas }}"
           resources:
             requests:
@@ -722,7 +724,7 @@
             otlphttp/prometheus:
               endpoint: http://{{ helm_releases.prometheus.name }}-kube-prometheus-prometheus.{{ helm_releases.prometheus.namespace }}.svc.cluster.local:9090
             prometheus:
-              endpoint: 0.0.0.0:8889
+              endpoint: 0.0.0.0:8888
           service:
             pipelines:
               logs:
@@ -739,19 +741,40 @@
                   - debug
                   - otlp
                   - spanmetrics
+            telemetry:
+              metrics:
+                level: detailed
+                readers:
+                  - pull:
+                      # interval: 10000
+                      # timeout: 5000
+                      exporter:
+                        prometheus:
+                          host: 0.0.0.0
+                          port: 8889
         serviceMonitor:
           enabled: true
           metricsEndpoints:
-            - port: demo-metrics
             - port: metrics
+            - port: telemetry
         podAnnotations:
           openshift.io/required-scc: restricted-v2
         ports:
-          demo-metrics:
+          jaeger-compact:
+            enabled: false
+          jaeger-thrift:
+            enabled: false
+          jaeger-grpc:
+            enabled: false
+          metrics:
+            enabled: true
+          telemetry:
             enabled: true
             containerPort: 8889
             servicePort: 8889
             protocol: TCP
+          zipkin:
+            enabled: false
         resources:
           requests:
             cpu: 75m
@@ -763,19 +786,14 @@
         enabled: false
     wait: true
 
-- name: Create Recording Prometheus Rules
+- name: Create Prometheus Rules
   kubernetes.core.k8s:
     kubeconfig: "{{ applications_cluster.kubeconfig }}"
-    namespace: "{{ helm_releases.otel_demo.namespace }}"
+    template:
+      path: templates/otel_demo/prometheusrules.j2
+      variable_end_string: "]]"
+      variable_start_string: "[["
     state: present
-    src: files/rules/workload.yaml
-
-- name: Create Alerting Prometheus Rules
-  kubernetes.core.k8s:
-    kubeconfig: "{{ applications_cluster.kubeconfig }}"
-    namespace: "{{ helm_releases.otel_demo.namespace }}"
-    state: present
-    src: files/rules/otel-demo.yaml
 
 - name: Create Horizontal Pod Autoscalers
   kubernetes.core.k8s:

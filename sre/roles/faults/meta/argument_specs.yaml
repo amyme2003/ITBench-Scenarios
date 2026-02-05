@@ -41,7 +41,6 @@ argument_specs:
             options:
               name:
                 choices:
-                  - hang-init-container
                   - invalid-command
                   - invalid-image
                   - invalid-node-selector
@@ -51,12 +50,38 @@ argument_specs:
                   - misconfigured-resource-quota
                   - misconfigured-service-port
                   - modify-environment-variables
+                  - readiness-flap
                   - unsupported-image
+                  - disable-ambient-mode
+                  - remove-resource-limits
                   - pod-anti-affinity-rescheduling
                   - misconfigured-resource-limits
                   - authorization-policy-deny
-                required: true
-                type: str
+                  - hang-init-container
+                  - strict-mutual-tls
+                  - dns-misconfiguration
+                  - pod-priority-eviction
+                  - pdb-blocking-drain
+              strict_mutual_tls:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
               authorization_policy_deny:
                 required: false
                 type: dict
@@ -102,6 +127,17 @@ argument_specs:
                     default: force
                     required: false
                     type: str
+              disable_ambient_mode:
+                required: false
+                type: dict
+                options:
+                  namespace:
+                    required: true
+                    type: dict
+                    options:
+                      name:
+                        required: true
+                        type: str
               invalid_command:
                 required: false
                 type: dict
@@ -216,34 +252,6 @@ argument_specs:
                       kind:
                         choices:
                           - Deployment
-                          - StatefulSet
-                        required: true
-                        type: str
-                      name:
-                        required: true
-                        type: str
-                      namespace:
-                        required: true
-                        type: str
-              misconfigured_resource_limits:
-                required: false
-                type: dict
-                options:
-                  workload:
-                    required: true
-                    type: dict
-                    options:
-                      container:
-                        required: true
-                        type: dict
-                        options:
-                          name:
-                            required: false
-                            type: str
-                      kind:
-                        choices:
-                          - Deployment
-                          - ReplicaSet
                           - StatefulSet
                         required: true
                         type: str
@@ -368,6 +376,40 @@ argument_specs:
                     default: force
                     required: false
                     type: str
+              readiness_flap:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+                      container:
+                        required: false
+                        type: dict
+                        options:
+                          name:
+                            required: false
+                            type: str
+                  restart_policy:
+                    choices:
+                      - force
+                      - safe
+                    default: force
+                    required: false
+                    type: str
               unsupported_image:
                 required: false
                 type: dict
@@ -403,6 +445,117 @@ argument_specs:
                     required: false
                     type: str
               pod_anti_affinity_rescheduling:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+              pod_priority_eviction:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+              remove_resource_limits:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+                      container:
+                        required: true
+                        type: str
+              misconfigured_resource_limits:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      container:
+                        required: true
+                        type: dict
+                        options:
+                          name:
+                            required: false
+                            type: str
+                      kind:
+                        choices:
+                          - Deployment
+                          - ReplicaSet
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+              dns_misconfiguration:
+                required: false
+                type: dict
+                options:
+                  workload:
+                    required: true
+                    type: dict
+                    options:
+                      kind:
+                        choices:
+                          - Deployment
+                          - StatefulSet
+                        required: true
+                        type: str
+                      name:
+                        required: true
+                        type: str
+                      namespace:
+                        required: true
+                        type: str
+              pdb_blocking_drain:
                 required: false
                 type: dict
                 options:
@@ -491,6 +644,13 @@ argument_specs:
                     required: true
                     type: dict
                     options:
+                      container:
+                        required: true
+                        type: dict
+                        options:
+                          name:
+                            required: false
+                            type: str
                       kind:
                         choices:
                           - Deployment

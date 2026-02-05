@@ -1,15 +1,33 @@
 ---
+- name: Import applications docs generation tasks
+  ansible.builtin.import_tasks:
+    file: generate_applications_docs.yaml
+  tags:
+    - generate_docs
+
 - name: Import faults docs generation tasks
   ansible.builtin.import_tasks:
     file: generate_faults_docs.yaml
   tags:
     - generate_docs
 
-- name: Import incident docs generation tasks
+- name: Import waiters docs generation tasks
   ansible.builtin.import_tasks:
-    file: generate_incidents_docs.yaml
+    file: generate_waiters_docs.yaml
   tags:
     - generate_docs
+
+- name: Import scenarios docs generation tasks
+  ansible.builtin.import_tasks:
+    file: generate_scenarios_docs.yaml
+  tags:
+    - generate_docs
+
+- name: Import applications docs validation tasks
+  ansible.builtin.import_tasks:
+    file: validate_applications_docs.yaml
+  tags:
+    - validate_docs
 
 - name: Import faults docs validation tasks
   ansible.builtin.import_tasks:
@@ -17,8 +35,14 @@
   tags:
     - validate_docs
 
-- name: Import incident docs validation tasks
+- name: Import waiters docs generation tasks
   ansible.builtin.import_tasks:
-    file: validate_incidents_docs.yaml
+    file: validate_waiters_docs.yaml
+  tags:
+    - validate_docs
+
+- name: Import scenarios docs validation tasks
+  ansible.builtin.import_tasks:
+    file: validate_scenarios_docs.yaml
   tags:
     - validate_docs
