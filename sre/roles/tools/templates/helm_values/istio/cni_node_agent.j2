@@ -1,5 +1,22 @@
 ---
 profile: ambient
+
+tolerations:
+  - operator: Exists
+
+cniBinDir: /opt/cni/bin
+cniConfDir: /etc/cni/net.d
+cniConfFileName: 10-aws.conflist
+
+repair:
+  enabled: true
+
+readinessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 10
+
 {% if tools_cluster.platform == "openshift" %}
 global:
   platform: openshift
