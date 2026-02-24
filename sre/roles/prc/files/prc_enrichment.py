@@ -416,7 +416,7 @@ def filter_prc_incidents(incidents_data: List[Dict[str, Any]], incident_id: Opti
         incident for incident in incidents_data
         if incident.get("type") == "incident"
         and incident.get("probableCause", {}).get("found") is True
-        and incident.get("problem","").startswith("Alert on all services")]
+        and incident.get("problem","").startswith("ITBench Incident")]
 
 
 
