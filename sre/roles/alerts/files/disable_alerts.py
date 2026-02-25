@@ -60,7 +60,7 @@ def print_alert_details(alert):
 # Main logic
 # -------------------------------
 def disable_alerts():
-    print("🔕 Disabling enabled alerts...")
+    print("Disabling enabled alerts...")
     alerts = get_alerts()
     enabled_alerts = [a for a in alerts if a.get("id") and a.get("enabled")]
 
