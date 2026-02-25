@@ -2,6 +2,7 @@
 import requests
 import os
 import sys
+import re
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -20,22 +21,7 @@ if not BASE_URL or not APPLICATION_ID or not TOKEN:
     sys.exit(1)
 
 HEADERS = {"Authorization": f"apiToken {TOKEN}"}
-
-ALERT_NAME_PATTERNS = [
-    {
-        "pattern": "Erroneous call count is high on Astronomy shop (EKS)",
-        "template": "ITBench Incident {incident_id}: Erroneous call count is high on Astronomy shop (EKS)"
-    },
-    {
-        "pattern": "Calls are slower than usual in Astronomy shop (EKS)",
-        "template": "ITBench Incident {incident_id}: Calls are slower than usual in Astronomy shop (EKS)"
-    },
-    {
-        "pattern": "Erroneous call rate is high on Astronomy shop (EKS)",
-        "template": "ITBench Incident {incident_id}: Erroneous call rate is high on Astronomy shop (EKS)"
-    }
-]
-
+INCIDENT_PREFIX_PATTERN = re.compile(r'^ITBench Incident \d+:\s*')
 
 # -------------------------------
 # Core functions
@@ -74,24 +60,24 @@ def enable_alert(alert_id):
 
 
 def should_update_alert_name(alert_name):
-    """Check if alert name matches any pattern that should be updated."""
+    """Check if alert name has an ITBench Incident prefix that should be updated."""
     if not INCIDENT_ID:
         return False
     
-    for pattern_info in ALERT_NAME_PATTERNS:
-        pattern = pattern_info["pattern"]
-        if pattern in alert_name:
-            return True
-    return False
+    # Check if the alert name starts with "ITBench Incident <number>:"
+    return bool(INCIDENT_PREFIX_PATTERN.match(alert_name))
 
 
 def get_new_alert_name(alert_name, incident_id):
-    """Generate new alert name with incident ID."""
-    for pattern_info in ALERT_NAME_PATTERNS:
-        pattern = pattern_info["pattern"]
-        if pattern in alert_name:
-            return pattern_info["template"].format(incident_id=incident_id)
-    return None
+    """
+    Generate new alert name by replacing the incident number.
+    Preserves everything after the incident prefix.
+    """
+    # Remove the old "ITBench Incident <number>:" prefix
+    base_name = INCIDENT_PREFIX_PATTERN.sub('', alert_name)
+    
+    # Add the new incident prefix
+    return f"ITBench Incident {incident_id}: {base_name}"
 
 
 def print_alert_details(alert):
