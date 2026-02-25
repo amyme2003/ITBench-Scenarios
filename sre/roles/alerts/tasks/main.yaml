@@ -32,6 +32,7 @@
       BASE_URL: "{{ base_url }}"
       APPLICATION_ID: "{{ application_id }}"
       TOKEN: "{{ instana_api_token }}"
+      INCIDENT_ID: "{{ incident_id | default('') }}"
   tags:
     - enable_alerts
     - disable_alerts
@@ -86,7 +87,7 @@
     - enable_alerts
     - disable_alerts
 
-- name: Display script errors (if any)
+- name: Display script errors
   debug:
     msg: "{{ alerts_script_output.stderr_lines | default(['No errors']) }}"
   when: alerts_script_output.stderr is defined and alerts_script_output.stderr != ''
@@ -94,4 +95,3 @@
     - enable_alerts
     - disable_alerts
 
-# Made with Bob
