@@ -26,6 +26,7 @@
         base_url: "{{ base_url }}"
         application_id: "{{ application_id }}"
         instana_api_token: "{{ instana_api_token }}"
+        incident_id: "{{ incident_id }}"
       tags:
         - manage_alerts
         - enable_alerts
