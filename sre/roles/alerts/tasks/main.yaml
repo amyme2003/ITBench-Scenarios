@@ -32,7 +32,7 @@
       BASE_URL: "{{ base_url }}"
       APPLICATION_ID: "{{ application_id }}"
       TOKEN: "{{ instana_api_token }}"
-      INCIDENT_ID: "{{ incident_id | default('') }}"
+      INCIDENT_ID: "{{ incident_id }}"
   tags:
     - enable_alerts
     - disable_alerts
@@ -82,7 +82,10 @@
 - name: Display script output
   debug:
     msg: "{{ alerts_script_output.stdout_lines | default(['No output']) }}"
-  when: alerts_script_output.stdout is defined
+  when:
+    - alerts_script_output is defined
+    - alerts_script_output.stdout is defined
+    - alerts_script_output.stdout | length > 0
   tags:
     - enable_alerts
     - disable_alerts
@@ -90,8 +93,10 @@
 - name: Display script errors
   debug:
     msg: "{{ alerts_script_output.stderr_lines | default(['No errors']) }}"
-  when: alerts_script_output.stderr is defined and alerts_script_output.stderr != ''
+  when:
+    - alerts_script_output is defined
+    - alerts_script_output.stderr is defined
+    - alerts_script_output.stderr | length > 0
   tags:
     - enable_alerts
     - disable_alerts
-
