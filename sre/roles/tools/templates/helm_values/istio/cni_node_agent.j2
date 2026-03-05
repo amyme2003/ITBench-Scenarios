@@ -12,10 +12,10 @@ repair:
   enabled: true
 
 readinessProbe:
-  initialDelaySeconds: 15
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 10
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 10
+  failureThreshold: 30
 
 {% if tools_cluster.platform == "openshift" %}
 global:
