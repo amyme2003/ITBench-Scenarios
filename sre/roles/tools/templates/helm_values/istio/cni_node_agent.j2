@@ -6,7 +6,8 @@ tolerations:
 
 cniBinDir: /opt/cni/bin
 cniConfDir: /etc/cni/net.d
-cniConfFileName: 10-aws.conflist
+# Auto-detect CNI config file (works with Cilium, AWS VPC CNI, etc.)
+# cniConfFileName: 10-aws.conflist
 
 repair:
   enabled: true
