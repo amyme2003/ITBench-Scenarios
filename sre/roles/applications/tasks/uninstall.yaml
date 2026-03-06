@@ -4,7 +4,6 @@
     file: uninstall_bookinfo.yaml
   when:
     - applications_required.bookinfo is defined
-    - applications_required.bookinfo.enabled
 
 - name: Import OpenTelemetry Demo uninstallation tasks
   ansible.builtin.import_tasks:
@@ -13,4 +12,3 @@
     helm_release: "{{ applications_helm_releases.otel_demo }}"
   when:
     - applications_required.otel_demo is defined
-    - applications_required.otel_demo.enabled
