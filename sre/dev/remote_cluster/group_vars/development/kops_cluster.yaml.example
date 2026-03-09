@@ -18,3 +18,9 @@ cluster:
     bucket_name: ""
   ssh:
     public_key_path: ""
+  tags:
+    instana-cost-tech-owner: "Team-<team-name>"
+    instana-cost-approving-manager: "<manager-email>"
+    instana-cost-detailed-purpose: "Team <team-name> resource"
+    instana-cost-expiry: "every 2 months"
+    map-migrated: "<migration-id>"

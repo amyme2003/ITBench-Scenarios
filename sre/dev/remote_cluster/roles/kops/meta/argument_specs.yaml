@@ -43,6 +43,10 @@ argument_specs:
                 elements: str
                 required: true
                 type: list
+              tags:
+                required: false
+                type: dict
+                description: Tags to apply to all cluster instances
           name_prefix:
             required: true
             type: str
@@ -94,6 +98,10 @@ argument_specs:
               bucket_name:
                 required: true
                 type: str
+          tags:
+            required: false
+            type: dict
+            description: Tags to apply to all cluster instances
   validate_stack:
     short_description: Entry point for kops configuration validation tasks
     description:

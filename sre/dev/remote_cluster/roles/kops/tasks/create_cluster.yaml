@@ -1,5 +1,47 @@
 ---
-- name: Create cluster configuration ({{ cluster_name }})
+- name: Build cloud labels string
+  ansible.builtin.set_fact:
+    kops_cloud_labels_string: "{{ (kops_cluster.aws.tags | default(kops_cluster.tags | default({}))) | dict2items | map(attribute='key') | zip(((kops_cluster.aws.tags | default(kops_cluster.tags | default({}))) | dict2items | map(attribute='value'))) | map('join', '=') | join(',') }}"
+  when:
+    - (kops_cluster.aws.tags is defined and kops_cluster.aws.tags | length > 0) or (kops_cluster.tags is defined and kops_cluster.tags | length > 0)
+
+- name: Create cluster configuration with tags ({{ cluster_name }})
+  ansible.builtin.command:
+    argv:
+      - kops
+      - create
+      - cluster
+      - "{{ cluster_name }}"
+      - --cloud
+      - aws
+      - --zones
+      - "{{ kops_cluster.aws.zones | join(',') }}"
+      - --ssh-public-key
+      - "{{ kops_cluster.ssh.public_key_path }}"
+      - --control-plane-size
+      - "{{ kops_cluster.nodes.control.instance_type }}"
+      - --control-plane-count
+      - "{{ kops_cluster.nodes.control.count }}"
+      - --node-size
+      - "{{ kops_cluster.nodes.worker.instance_type }}"
+      - --node-count
+      - "{{ kops_cluster.nodes.worker.count }}"
+      - --networking
+      - "{{ kops_cluster.networking.mode }}"
+      - --state
+      - "{{ kops_state_store }}"
+      - --channel
+      - stable
+      - --kubernetes-version
+      - "{{ kops_cluster.kubernetes_version }}"
+      - --cloud-labels
+      - "{{ kops_cloud_labels_string }}"
+  register: kops_create_output
+  changed_when: kops_create_output.rc == 0
+  when:
+    - kops_cloud_labels_string is defined
+
+- name: Create cluster configuration without tags ({{ cluster_name }})
   ansible.builtin.command:
     argv:
       - kops
@@ -30,6 +72,8 @@
       - "{{ kops_cluster.kubernetes_version }}"
   register: kops_create_output
   changed_when: kops_create_output.rc == 0
+  when:
+    - kops_cloud_labels_string is not defined
 
 - name: Apply Cilium changes to configuration
   ansible.builtin.command:
@@ -45,6 +89,24 @@
       - spec.networking.cilium.cniExclusive=false
   register: kops_edit_output
   changed_when: kops_edit_output.rc == 0
+
+- name: Apply instance tags to cluster configuration
+  ansible.builtin.command:
+    argv:
+      - kops
+      - edit
+      - cluster
+      - --name
+      - "{{ cluster_name }}"
+      - --state
+      - "{{ kops_state_store }}"
+      - --set
+      - "spec.cloudLabels.{{ item.key }}={{ item.value }}"
+  loop: "{{ (kops_cluster.aws.tags | default(kops_cluster.tags | default({}))) | dict2items }}"
+  register: kops_tags_output
+  changed_when: kops_tags_output.rc == 0
+  when:
+    - (kops_cluster.aws.tags is defined and kops_cluster.aws.tags | length > 0) or (kops_cluster.tags is defined and kops_cluster.tags | length > 0)
 
 - name: Build cluster ({{ cluster_name }})
   ansible.builtin.command:

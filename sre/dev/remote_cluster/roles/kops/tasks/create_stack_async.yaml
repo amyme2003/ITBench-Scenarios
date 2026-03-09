@@ -52,6 +52,10 @@
   ansible.builtin.set_fact:
     kops_private_subnet_ids: "{{ kops_private_subnets.results | community.general.json_query('[*].subnet.id') }}"
 
+- name: Check if Elastic IP allocation ID is provided
+  ansible.builtin.set_fact:
+    kops_elastic_ip_available: "{{ kops_stack.runners.aws.elastic_ip_allocation_id is defined and kops_stack.runners.aws.elastic_ip_allocation_id | length > 0 }}"
+
 - name: Create a single NAT Gateway for all clusters
   amazon.aws.ec2_vpc_nat_gateway:
     subnet_id: "{{ kops_public_subnet_ids[0] }}"
@@ -111,7 +115,61 @@
   when:
     - kops_nat_gateway is not defined or kops_nat_gateway.nat_gateway_id is not defined
 
-- name: Asynchronously create kOps clusters
+- name: Build cloud labels string
+  ansible.builtin.set_fact:
+    kops_cloud_labels_string: "{{ (kops_cluster.aws.tags | default(kops_cluster.tags | default({}))) | dict2items | map(attribute='key') | zip(((kops_cluster.aws.tags | default(kops_cluster.tags | default({}))) | dict2items | map(attribute='value'))) | map('join', '=') | join(',') }}"
+  when:
+    - (kops_cluster.aws.tags is defined and kops_cluster.aws.tags | length > 0) or (kops_cluster.tags is defined and kops_cluster.tags | length > 0)
+
+- name: Asynchronously create kOps clusters with tags
+  ansible.builtin.command:
+    argv:
+      - kops
+      - create
+      - cluster
+      - "{{ item }}"
+      - --cloud
+      - aws
+      - --topology
+      - "{{ 'private' if kops_stack.runners.aws.elastic_ip_allocation_id is defined else 'public' }}"
+      - --network-id
+      - "{{ kops_vpc_info.vpc.id }}"
+      - --subnets
+      - "{{ kops_private_subnet_ids[name_index] }}"
+      - --utility-subnets
+      - "{{ kops_public_subnet_ids[name_index] }}"
+      - --zones
+      - "{{ kops_cluster.aws.zones | join(',') }}"
+      - --ssh-public-key
+      - "{{ kops_cluster.ssh.public_key_path }}"
+      - --control-plane-size
+      - "{{ kops_cluster.nodes.control.instance_type }}"
+      - --control-plane-count
+      - "{{ kops_cluster.nodes.control.count }}"
+      - --node-size
+      - "{{ kops_cluster.nodes.worker.instance_type }}"
+      - --node-count
+      - "{{ kops_cluster.nodes.worker.count }}"
+      - --networking
+      - "{{ kops_cluster.networking.mode }}"
+      - --state
+      - "{{ kops_state_store }}"
+      - --channel
+      - stable
+      - --kubernetes-version
+      - "{{ kops_cluster.kubernetes_version }}"
+      - --cloud-labels
+      - "{{ kops_cloud_labels_string }}"
+  async: 600
+  loop: "{{ stack_cluster_names }}"
+  loop_control:
+    index_var: name_index
+  poll: 0
+  register: kops_async_create_with_tags_results
+  when:
+    - kops_cloud_labels_string is defined
+
+- name: Asynchronously create kOps clusters without tags
   ansible.builtin.command:
     argv:
       - kops
@@ -153,22 +211,34 @@
   loop_control:
     index_var: name_index
   poll: 0
-  register: kops_async_create_results
+  register: kops_async_create_without_tags_results
+  when:
+    - kops_cloud_labels_string is not defined
+
+- name: Set unified create results variable
+  ansible.builtin.set_fact:
+    kops_async_create_results: "{{ kops_async_create_with_tags_results if kops_cloud_labels_string is defined else kops_async_create_without_tags_results }}"
 
 - name: Wait for asynchronous operations to complete
   ansible.builtin.async_status:
     jid: "{{ item.ansible_job_id }}"
-  loop: "{{ kops_async_create_results.results }}"
+  loop: "{{ kops_async_create_results.results | selectattr('ansible_job_id', 'defined') | list }}"
   register: kops_async_create_poll_results
   until: kops_async_create_poll_results.finished
   delay: 60
   retries: 10
+  when:
+    - kops_async_create_results is defined
+    - kops_async_create_results.results is defined
 
 - name: Clean up ansychronous operations
   ansible.builtin.async_status:
     mode: cleanup
     jid: "{{ item.ansible_job_id }}"
-  loop: "{{ kops_async_create_results.results }}"
+  loop: "{{ kops_async_create_results.results | selectattr('ansible_job_id', 'defined') | list }}"
+  when:
+    - kops_async_create_results is defined
+    - kops_async_create_results.results is defined
 
 - name: Apply Cilium changes to configuration
   ansible.builtin.command:
