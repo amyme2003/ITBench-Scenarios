@@ -19,6 +19,10 @@
     release_name: "{{ awx_helm_releases.awx_operator.name }}"
     release_namespace: "{{ awx_helm_releases.awx_operator.namespace }}"
     release_state: present
+    release_values:
+      operator-controller-containers:
+        kube-rbac-proxy:
+          image: quay.io/brancz/kube-rbac-proxy:v0.18.1
     timeout: 10m0s
     wait: true
 
