@@ -1,0 +1,81 @@
+---
+# Tasks for Investigation trigger role
+
+- name: Create a virtual environment for investigation trigger script
+  ansible.builtin.shell:
+    cmd: "python3 -m venv {{ role_path }}/venv"
+  args:
+    creates: "{{ role_path }}/venv"
+  changed_when: false
+  tags:
+    - trigger_investigation
+
+- name: Install dependencies in virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/pip install -r {{ role_path }}/files/requirements.txt"
+  changed_when: false
+  tags:
+    - trigger_investigation
+
+- name: Set environment variables for API access
+  ansible.builtin.set_fact:
+    investigation_env:
+      BASE_URL: "{{ base_url }}"
+      APPLICATION_ID: "{{ application_id }}"
+      TOKEN: "{{ instana_api_token }}"
+      INCIDENT_ID: "{{ incident_id }}"
+      ALERTS_ENABLED_AT_MS: "{{ alerts_enabled_at_ms | default('') }}"
+  tags:
+    - trigger_investigation
+
+- name: Ensure the investigation trigger script has execute permissions
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/trigger_investigation.py"
+    mode: '0755'
+  tags:
+    - trigger_investigation
+
+- name: Run investigation trigger script with virtual environment
+  ansible.builtin.shell:
+    cmd: "{{ role_path }}/venv/bin/python {{ role_path }}/files/trigger_investigation.py"
+  args:
+    executable: /bin/bash
+  environment: "{{ investigation_env }}"
+  register: investigation_script_output
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - trigger_investigation
+
+- name: Display script output
+  ansible.builtin.debug:
+    msg: "{{ investigation_script_output.stdout_lines | default(['No output']) }}"
+  when:
+    - investigation_script_output is defined
+    - investigation_script_output.stdout is defined
+    - investigation_script_output.stdout | length > 0
+  tags:
+    - trigger_investigation
+
+- name: Display script errors
+  ansible.builtin.debug:
+    msg: "{{ investigation_script_output.stderr_lines | default(['No errors']) }}"
+  when:
+    - investigation_script_output is defined
+    - investigation_script_output.stderr is defined
+    - investigation_script_output.stderr | length > 0
+  tags:
+    - trigger_investigation
+
+- name: Fail if investigation trigger script returned non-zero exit code
+  ansible.builtin.fail:
+    msg: >
+      Investigation trigger script failed (rc={{ investigation_script_output.rc }}).
+      One or more investigation trigger API calls returned a non-2xx response.
+      See output above for details.
+  when:
+    - investigation_script_output is defined
+    - investigation_script_output.rc is defined
+    - investigation_script_output.rc != 0
+  tags:
+    - trigger_investigation

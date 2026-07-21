@@ -100,3 +100,12 @@
   tags:
     - enable_alerts
     - disable_alerts
+
+- name: Publish alerts-enabled timestamp as workflow artifact
+  ansible.builtin.set_stats:
+    data:
+      alerts_enabled_at_ms: "{{ (ansible_date_time.epoch | int) * 1000 }}"
+    per_host: false
+  when: operation == 'enable'
+  tags:
+    - enable_alerts

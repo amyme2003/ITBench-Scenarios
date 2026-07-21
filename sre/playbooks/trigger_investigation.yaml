@@ -1,0 +1,31 @@
+---
+- name: Trigger Instana Agentic Incident Investigation
+  hosts:
+    - environment
+  gather_facts: true
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - base_url is defined
+          - application_id is defined
+          - instana_api_token is defined
+          - incident_id is defined
+        fail_msg: "base_url, application_id, instana_api_token, and incident_id are required variables."
+        success_msg: "All required variables are defined"
+      tags:
+        - always
+        - trigger_investigation
+
+  tasks:
+    - name: Import investigation role
+      ansible.builtin.import_role:
+        name: ../roles/investigation
+      vars:
+        base_url: "{{ base_url }}"
+        application_id: "{{ application_id }}"
+        instana_api_token: "{{ instana_api_token }}"
+        incident_id: "{{ incident_id }}"
+      tags:
+        - trigger_investigation

@@ -25,6 +25,7 @@
 
 - name: Gather all regions
   amazon.aws.aws_region_info:
+    region: "{{ kops_cluster.aws.region }}"
   register: kops_region_info
 
 - name: Parse region names
