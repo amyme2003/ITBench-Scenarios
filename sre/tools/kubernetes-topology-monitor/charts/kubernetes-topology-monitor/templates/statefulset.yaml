@@ -21,7 +21,7 @@ spec:
       containers:
       - name: topology-monitor
         image: quay.io/it-bench/topology-monitor:0.0.4
-        imagePullPolicy: Always
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         command: ["python3.12"]
         args:
         - "main.py"
