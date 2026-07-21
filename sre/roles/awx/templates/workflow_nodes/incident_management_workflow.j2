@@ -91,11 +91,29 @@
 - identifier: node-wait-period-short
   related:
     success_nodes:
+      - identifier: node-trigger-investigation
+  unified_job_template:
+    name: Wait-Period-Short
+    type: job_template
+
+- identifier: node-trigger-investigation
+  extra_data:
+    incident_id: {{ scenario_id }}
+    base_url: "{{ base_url | default('') }}"
+    application_id: "{{ application_id | default('') }}"
+    instana_api_token: "{{ instana_api_token | default('') }}" # pragma: allowlist secret
+  related:
+    credentials:
+      - name: Cluster-{{ cluster_index + 1 }}-Kubeconfig
+{% if requires_aws_credentials %}
+      - name: AWS
+{% endif %}
+    always_nodes:
       - identifier: node-prc
       - identifier: node-remediation
       - identifier: node-recommended-actions
   unified_job_template:
-    name: Wait-Period-Short
+    name: Trigger-Investigation
     type: job_template
 
 - identifier: node-prc

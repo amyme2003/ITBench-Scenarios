@@ -103,6 +103,15 @@ else
 	@echo "Missing INCIDENT_NUMBER argument. Please run this command with this variable."
 endif
 
+.PHONY: trigger_investigation
+trigger_investigation: ## Triggers an Instana agentic investigation for a specific incident
+ifdef INCIDENT_NUMBER
+	ansible-playbook -i inventory.yaml playbooks/trigger_investigation.yaml --tags "trigger_investigation" \
+		--extra-vars "incident_id=$(INCIDENT_NUMBER)"
+else
+	@echo "Missing INCIDENT_NUMBER argument. Please run this command with this variable."
+endif
+
 .PHONY: remove_incident_fault
 remove_incident_fault: ## Removes the fault used in a specific incident
 ifdef INCIDENT_NUMBER

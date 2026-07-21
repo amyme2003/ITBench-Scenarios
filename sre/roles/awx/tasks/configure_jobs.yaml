@@ -339,6 +339,24 @@
     project: GitHub-ITBench
     state: present
 
+- name: Add job template for triggering investigation
+  awx.awx.job_template:
+    allow_simultaneous: true
+    ask_credential_on_launch: true
+    ask_variables_on_launch: true
+    controller_host: "{{ awx_controller_host }}"
+    controller_password: "{{ awx_controller_password }}" # pragma: allowlist secret
+    controller_username: admin
+    execution_environment: ITBench-Custom-EE
+    inventory: ITBench
+    job_tags: trigger_investigation
+    job_type: run
+    name: Trigger-Investigation
+    organization: ITBench
+    playbook: sre/playbooks/trigger_investigation.yaml
+    project: GitHub-ITBench
+    state: present
+
 - name: Add job template for PRC
   awx.awx.job_template:
     allow_simultaneous: true
