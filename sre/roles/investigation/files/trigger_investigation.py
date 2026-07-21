@@ -42,17 +42,16 @@ def get_alert_configs():
     url = f"{BASE_URL}/api/events/settings/application-alert-configs?applicationId={APPLICATION_ID}"
     resp = requests.get(url, headers=HEADERS)
     resp.raise_for_status()
-    print(resp.json())
     return resp.json()
 
 
-def query_incidents(spec_id, now_ms):
-    """Query incidents for a single event specification ID within the last 15 minutes."""
+def query_incidents(spec_id, now_ms, window_size_ms=WINDOW_SIZE_MS):
+    """Query incidents for a single event specification ID within the given time window."""
     query = f"event.specification.id:{spec_id} AND event.type:incident AND event.rca.found:true"
     url = (
         f"{BASE_URL}/api/events/events-query"
         f"?query={requests.utils.quote(query)}"
-        f"&windowSize={WINDOW_SIZE_MS}"
+        f"&windowSize={window_size_ms}"
         f"&to={now_ms}"
         f"&orderBy=start"
     )
